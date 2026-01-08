@@ -58,14 +58,6 @@ export function ChatInterface() {
       <div className="relative max-w-7xl mx-auto px-4 py-8 lg:py-12">
         {/* Header with Gradient */}
         <div className="text-center mb-8 animate-slide-up">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 text-sm font-medium mb-4">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
-            </span>
-            AI 智能体已就绪
-          </div>
-
           <h1 className="text-4xl lg:text-5xl font-bold mb-3 gradient-text">
             数据库查询智能体
           </h1>
