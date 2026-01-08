@@ -3,6 +3,7 @@
  * 测试数据库智能体的核心功能
  */
 
+import 'dotenv/config';
 import { DatabaseAgent } from '../../lib/agent/database-agent';
 import { db } from '../../lib/database/client';
 import { sql } from 'drizzle-orm';

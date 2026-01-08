@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { Anthropic } from '@anthropic-ai/sdk';
 
 // 创建 Anthropic 客户端实例
@@ -8,8 +9,8 @@ export const anthropic = new Anthropic({
 });
 
 // 模型配置
-// 使用 claude-3-5-sonnet-20241022 作为默认模型（Claude 3.5 Sonnet 最新版本）
-export const CLAUDE_MODEL = 'claude-3-5-sonnet-20241022';
+// 优先使用环境变量中的模型，否则使用默认模型
+export const CLAUDE_MODEL = process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20241022';
 
 // 默认参数配置
 export const DEFAULT_AGENT_CONFIG = {

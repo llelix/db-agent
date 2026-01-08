@@ -156,8 +156,9 @@ export async function GET(request: NextRequest) {
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<Record<string, any>> }
 ) {
+  const { id } = await params as { id: string };
   try {
     const session = await auth();
 
@@ -167,8 +168,6 @@ export async function DELETE(
         { status: 401 }
       );
     }
-
-    const { id } = params;
 
     // 验证权限并删除
     const result = await db.delete(queryHistory)

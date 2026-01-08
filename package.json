@@ -44,7 +44,7 @@
     "postgres": "^3.4.8",
     "tailwind-merge": "^2.6.0",
     "tailwindcss": "^4",
-    "tsx": "^4.19.2",
+    "tsx": "^4.21.0",
     "typescript": "^5",
     "vitest": "^2.1.9",
     "zod": "^4.3.5"

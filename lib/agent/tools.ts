@@ -19,9 +19,13 @@ function validateSQLSecurity(sqlQuery: string): { safe: boolean; error?: string 
     return { safe: false, error: '只允许执行 SELECT 查询' };
   }
 
-  // 阻止危险关键词
-  const dangerous = ['DROP', 'DELETE', 'INSERT', 'UPDATE', 'CREATE', 'ALTER', 'TRUNCATE', 'EXEC', 'UNION'];
-  const foundDangerous = dangerous.filter(keyword => upperSql.includes(keyword));
+  // 阻止危险关键词 - 使用单词边界匹配，避免误判
+  const dangerous = ['DROP', 'DELETE', 'INSERT', 'UPDATE', 'ALTER', 'TRUNCATE', 'EXEC'];
+  const foundDangerous = dangerous.filter(keyword => {
+    // 使用正则表达式匹配单词边界
+    const regex = new RegExp(`\\b${keyword}\\b`);
+    return regex.test(upperSql);
+  });
 
   if (foundDangerous.length > 0) {
     return { safe: false, error: `SQL 包含危险操作: ${foundDangerous.join(', ')}` };
@@ -30,6 +34,11 @@ function validateSQLSecurity(sqlQuery: string): { safe: boolean; error?: string 
   // 检查注释注入
   if (sqlQuery.includes('--') || sqlQuery.includes('/*')) {
     return { safe: false, error: 'SQL 注入检测: 避免使用注释' };
+  }
+
+  // 检查 UNION - 特殊处理，因为可能在子查询中
+  if (/\bUNION\b/i.test(sqlQuery)) {
+    return { safe: false, error: 'SQL 包含危险操作: UNION' };
   }
 
   return { safe: true };

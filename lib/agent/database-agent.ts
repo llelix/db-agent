@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { Anthropic } from '@anthropic-ai/sdk';
 import { executeSQLTool, getSchemaTool, analyzeDataTool, tools } from './tools';
 import { AgentResult, AgentConfig, ReActStep } from './types';
@@ -32,21 +33,26 @@ export class DatabaseAgent {
 4. **Final Answer**: 总结回答
 
 **工具说明**:
-- \`get_database_schema\`: 获取数据库表结构
-- \`execute_sql\`: 执行安全的 SELECT 查询
-- \`analyze_data\`: 分析和处理数据
+- \`get_database_schema\`: 获取数据库表结构 (参数: tableName 可选)
+- \`execute_sql\`: 执行安全的 SELECT 查询 (参数: sql, explanation)
+- \`analyze_data\`: 分析和处理数据 (参数: data, operation, column, limit)
 
-**规则**:
-1. 先使用 \`get_database_schema\` 了解表结构
-2. 使用 \`execute_sql\` 执行查询 (只允许 SELECT)
-3. 使用 \`analyze_data\` 分析结果
-4. 用中文回答用户
-5. 确保 SQL 安全性
-6. 最多执行 10 步
+**工作流程**:
+1. 第一步总是调用 \`get_database_schema\` 了解表结构
+2. 根据表结构设计 SQL 查询
+3. 调用 \`execute_sql\` 执行查询
+4. 如需分析，调用 \`analyze_data\`
+5. 用中文给出最终答案
+
+**重要规则**:
+- 所有 SQL 必须是 SELECT 语句
+- 确保表名和列名正确
+- 用中文回答用户
+- 最多执行 10 步
 
 **安全要求**:
 - 只允许 SELECT 查询
-- 阻止 DROP, DELETE, INSERT, UPDATE 等危险操作
+- 阻止 DROP, DELETE, INSERT, UPDATE, CREATE, ALTER 等危险操作
 - 验证所有 SQL 语句`;
   }
 
@@ -81,6 +87,12 @@ export class DatabaseAgent {
 
       totalInputTokens += response.usage.input_tokens;
       totalOutputTokens += response.usage.output_tokens;
+
+      // 检查是否有内容
+      if (!response.content || response.content.length === 0) {
+        finalResult = 'AI 没有返回任何内容';
+        break;
+      }
 
       const content = response.content[0];
 

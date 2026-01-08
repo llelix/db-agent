@@ -41,7 +41,7 @@ export function ChatInterface() {
 
     // 乐观更新 - 立即显示处理状态
     addOptimisticResult({
-      result: '正在处理您的查询，AI 智能体正在思考...',
+      result: '✨ 正在处理您的查询，AI 智能体正在思考...',
       steps: [],
     });
 
@@ -49,80 +49,118 @@ export function ChatInterface() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
-      {/* Header */}
-      <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold text-gray-900">数据库查询智能体</h1>
-        <p className="text-gray-600">
-          使用自然语言描述您的查询需求，AI 智能体将自动分析并执行
-        </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+      {/* Background Pattern */}
+      <div className="fixed inset-0 pointer-events-none opacity-30 dark:opacity-10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(139,92,246,0.15)_1px,transparent_0)] bg-[length:20px_20px]" />
       </div>
 
-      {/* Tab Navigation */}
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-        <div className="border-b px-4">
-          <nav className="flex gap-1">
-            <button
-              onClick={() => setActiveTab('query')}
-              className={`px-6 py-3 text-sm font-medium transition-colors ${
-                activeTab === 'query'
-                  ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              📝 查询
-            </button>
-            <button
-              onClick={() => setActiveTab('history')}
-              className={`px-6 py-3 text-sm font-medium transition-colors ${
-                activeTab === 'history'
-                  ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              📚 历史记录
-            </button>
-          </nav>
+      <div className="relative max-w-7xl mx-auto px-4 py-8 lg:py-12">
+        {/* Header with Gradient */}
+        <div className="text-center mb-8 animate-slide-up">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 text-sm font-medium mb-4">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
+            </span>
+            AI 智能体已就绪
+          </div>
+
+          <h1 className="text-4xl lg:text-5xl font-bold mb-3 gradient-text">
+            数据库查询智能体
+          </h1>
+
+          <p className="text-slate-600 dark:text-slate-400 text-lg max-w-2xl mx-auto">
+            使用自然语言描述您的查询需求，AI 智能体将自动分析并执行
+          </p>
         </div>
 
-        {/* Query Tab */}
-        {activeTab === 'query' && (
-          <div className="p-6 space-y-6">
-            {/* Input Form */}
-            <form onSubmit={handleFormSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="query" className="block text-sm font-medium text-gray-700 mb-2">
-                  自然语言查询
+        {/* Main Card */}
+        <div className="glass rounded-2xl shadow-2xl shadow-violet-200/50 dark:shadow-violet-900/20 overflow-hidden animate-slide-up border border-white/20 dark:border-slate-700/50">
+          {/* Tab Navigation */}
+          <div className="border-b border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg">
+            <nav className="flex gap-1 p-2">
+              <Button
+                variant={activeTab === 'query' ? 'gradient' : 'ghost'}
+                size="sm"
+                onClick={() => setActiveTab('query')}
+                className="gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                智能查询
+              </Button>
+
+              <Button
+                variant={activeTab === 'history' ? 'gradient' : 'ghost'}
+                size="sm"
+                onClick={() => setActiveTab('history')}
+                className="gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                查询历史
+              </Button>
+            </nav>
+          </div>
+
+          {/* Query Tab */}
+          {activeTab === 'query' && (
+            <div className="p-6 lg:p-8 space-y-6">
+              {/* Input Section */}
+              <div className="space-y-4">
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  📝 自然语言查询
                 </label>
-                <textarea
-                  id="query"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="例如：
-• 查询最近一周的销售总额
-• 按产品分类统计销量
-• 查找价格高于100的产品
-• 统计每个用户的购买次数"
-                  className="w-full min-h-[140px] px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y font-mono text-sm"
-                  disabled={isPending}
-                />
+
+                <div className="relative">
+                  <textarea
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="试试这些查询：
+• 查询所有用户
+• 统计产品总数
+• 最贵的产品是什么
+• 销售总额是多少"
+                    disabled={isPending}
+                    className="w-full min-h-[160px] px-5 py-4 rounded-xl border-2 border-slate-200 dark:border-slate-700
+                             bg-white dark:bg-slate-950
+                             focus:border-violet-500 focus:ring-4 focus:ring-violet-200 dark:focus:ring-violet-900/30
+                             transition-all duration-200 resize-y font-mono text-sm
+                             placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                  />
+
+                  {query && !isPending && (
+                    <button
+                      onClick={() => setQuery('')}
+                      className="absolute top-3 right-3 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 underline"
+                    >
+                      清空
+                    </button>
+                  )}
+                </div>
               </div>
 
-              <div className="flex items-center gap-4">
+              {/* Action Buttons */}
+              <div className="flex items-center gap-3">
                 <Button
                   type="submit"
+                  onClick={handleFormSubmit}
                   disabled={!query.trim() || isPending}
+                  variant="gradient"
                   size="lg"
-                  className="min-w-[120px]"
+                  className="gap-2 min-w-[140px] shadow-lg shadow-violet-500/30"
                 >
                   {isPending ? (
-                    <span className="flex items-center gap-2">
+                    <>
                       <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       处理中...
-                    </span>
+                    </>
                   ) : (
                     <>
-                      <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                       </svg>
                       执行查询
@@ -130,94 +168,135 @@ export function ChatInterface() {
                   )}
                 </Button>
 
-                {query.trim() && !isPending && (
-                  <button
-                    type="button"
-                    onClick={() => setQuery('')}
-                    className="text-sm text-gray-600 hover:text-gray-900 underline"
-                  >
-                    清空
-                  </button>
-                )}
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  onClick={() => setQuery('')}
+                  className="gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  重置
+                </Button>
               </div>
-            </form>
 
-            {/* Error Message */}
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 animate-fade-in">
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 mt-0.5">
-                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div className="ml-2">
-                    <p className="text-sm font-medium text-red-800">查询失败</p>
-                    <p className="text-sm text-red-700 mt-1">{error}</p>
+              {/* Error Message */}
+              {error && (
+                <div className="animate-fade-in rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 mt-0.5">
+                      <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-red-800 dark:text-red-300">查询失败</p>
+                      <p className="text-sm text-red-700 dark:text-red-400 mt-1">{error}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Result Display */}
-            {(optimisticResult || result) && (
-              <div className="space-y-6 animate-fade-in">
-                <div className="border-t pt-6">
-                  <QueryResult
-                    result={result || optimisticResult}
-                    loading={isPending}
-                  />
-                </div>
-
-                {/* ReAct Flow Visualization */}
-                {result?.steps && result.steps.length > 0 && (
-                  <div className="border-t pt-6">
-                    <ReActFlow steps={result.steps} isStreaming={isPending} />
+              {/* Result Display */}
+              {(optimisticResult || result) && (
+                <div className="space-y-6 animate-fade-in">
+                  <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
+                    <QueryResult
+                      result={result || optimisticResult}
+                      loading={isPending}
+                    />
                   </div>
-                )}
+
+                  {/* ReAct Flow Visualization */}
+                  {result?.steps && result.steps.length > 0 && (
+                    <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
+                      <ReActFlow steps={result.steps} isStreaming={isPending} />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* History Tab */}
+          {activeTab === 'history' && (
+            <div className="p-6 lg:p-8">
+              <QueryHistory onSelectQuery={handleQuerySelect} />
+            </div>
+          )}
+        </div>
+
+        {/* Feature Cards */}
+        <div className="grid md:grid-cols-3 gap-4 mt-8 animate-slide-up">
+          <div className="glass rounded-xl p-5 border border-white/20 dark:border-slate-700/50">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center text-white">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
               </div>
-            )}
+              <h3 className="font-semibold text-slate-900 dark:text-slate-100">智能分析</h3>
+            </div>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              AI 自然语言理解，自动转换为 SQL 查询
+            </p>
           </div>
-        )}
 
-        {/* History Tab */}
-        {activeTab === 'history' && (
-          <div className="p-6">
-            <QueryHistory onSelectQuery={handleQuerySelect} />
+          <div className="glass rounded-xl p-5 border border-white/20 dark:border-slate-700/50">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="font-semibold text-slate-900 dark:text-slate-100">安全可靠</h3>
+            </div>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              只读访问，SQL 注入防护，查询审计
+            </p>
           </div>
-        )}
-      </div>
 
-      {/* Info Card */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <h3 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-              使用说明
-            </h3>
-            <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-              <li>使用自然语言描述查询需求</li>
-              <li>支持用户、产品、销售数据查询</li>
-              <li>AI 自动分析并生成 SQL</li>
-              <li>所有查询自动保存到历史</li>
-            </ul>
+          <div className="glass rounded-xl p-5 border border-white/20 dark:border-slate-700/50">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="font-semibold text-slate-900 dark:text-slate-100">ReAct 模式</h3>
+            </div>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              思考 → 行动 → 观察 → 回答的完整推理链
+            </p>
           </div>
-          <div>
-            <h3 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm3.293 1.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L7.586 10 5.293 7.707a1 1 0 010-1.414zM11 12a1 1 0 100 2h3a1 1 0 100-2h-3z" />
-              </svg>
-              ReAct 模式
-            </h3>
-            <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-              <li>Thought: AI 分析用户意图</li>
-              <li>Action: 调用数据库工具</li>
-              <li>Observation: 分析查询结果</li>
-              <li>Final: 生成最终回答</li>
-            </ul>
+        </div>
+
+        {/* Quick Examples */}
+        <div className="mt-6 glass rounded-xl p-6 border border-white/20 dark:border-slate-700/50 animate-slide-up">
+          <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
+            <span className="text-lg">💡</span>
+            快速示例
+          </h3>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {[
+              '查询所有用户',
+              '统计产品总数',
+              '最贵的产品是什么',
+              '销售总额是多少',
+              '按类别统计销量',
+              '最近一周的销售',
+            ].map((example, idx) => (
+              <button
+                key={idx}
+                onClick={() => setQuery(example)}
+                className="text-left px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-violet-100 dark:hover:bg-violet-900/30
+                         text-sm text-slate-700 dark:text-slate-300 transition-all duration-200
+                         border border-transparent hover:border-violet-300 dark:hover:border-violet-700"
+              >
+                {example}
+              </button>
+            ))}
           </div>
         </div>
       </div>

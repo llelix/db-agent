@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { db } from '../../lib/database/client';
 import { users, products, sales, queryHistory } from '../schema';
 import { sql } from 'drizzle-orm';
