@@ -243,18 +243,28 @@ export class DatabaseAgent {
 
   /**
    * 判断是否需要继续执行
+   * 基于 ReAct 标准模式：当 AI 明确给出 Final Answer 时停止
    */
   private shouldContinue(text: string): boolean {
-    const stopKeywords = ['完成', '最终答案', '总结', '回答', '完毕', '最终结果'];
-    const continueKeywords = ['继续', '下一步', '还需要', '考虑', '分析', '查询'];
+    // 标准 ReAct 完成模式（基于 LangChain 规范）
+    const completePatterns = [
+      // 标准格式：Final Answer: [answer]
+      /Final Answer[:：]/i,
 
-    const hasStop = stopKeywords.some(k => text.includes(k));
-    const hasContinue = continueKeywords.some(k => text.includes(k));
+      // AI 明确表示已知最终答案
+      /I now know the final answer/i,
+      /I now know the answer/i,
 
-    if (hasStop) return false;
-    if (hasContinue) return true;
+      // 中文标准格式
+      /最终答案[:：]/i,
 
-    // 如果文本较短，可能需要继续
-    return text.length < 100;
+      // 如果包含这些，通常意味着思考结束
+      /因此，?答案是/i,
+      /综上所述/i,
+      /总结[:：]/i,
+    ];
+
+    // 检查是否包含完成模式
+    return !completePatterns.some(p => p.test(text));
   }
 }
