@@ -212,6 +212,42 @@ export class ConnectionManager {
       connectionPools.delete(id);
     }
   }
+
+  /**
+   * 清除指定连接的缓存
+   */
+  static clearConnectionCache(connectionId: string): void {
+    const pool = connectionPools.get(connectionId);
+    if (pool) {
+      pool.end().catch(console.error);
+      connectionPools.delete(connectionId);
+      console.log(`已清除连接缓存: ${connectionId}`);
+    }
+  }
+
+  /**
+   * 获取所有缓存的连接ID
+   */
+  static getCachedConnectionIds(): string[] {
+    return Array.from(connectionPools.keys());
+  }
+
+  /**
+   * 验证连接是否有效
+   */
+  static async validateConnection(connectionId: string): Promise<boolean> {
+    try {
+      const pool = connectionPools.get(connectionId);
+      if (!pool) return false;
+
+      await pool`SELECT 1`;
+      return true;
+    } catch (error) {
+      // 如果连接无效，清除缓存
+      this.clearConnectionCache(connectionId);
+      return false;
+    }
+  }
 }
 
 // 导出加密/解密函数供外部使用

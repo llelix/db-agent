@@ -63,6 +63,8 @@ export function TableBrowser({ connectionId, connections, onConnectionChange }: 
 
   useEffect(() => {
     if (connectionId) {
+      // 验证连接并清除可能的缓存
+      validateAndClearCache(connectionId);
       loadTables();
       // 切换连接时重置表选择
       setSelectedTable(null);
@@ -71,6 +73,21 @@ export function TableBrowser({ connectionId, connections, onConnectionChange }: 
       setActiveTab('list');
     }
   }, [connectionId]);
+
+  const validateAndClearCache = async (connId: string) => {
+    try {
+      // 调用API验证连接并清除缓存
+      const res = await fetch(`/api/db/${connId}/validate`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.cleared) {
+          console.log('已清除连接缓存:', connId);
+        }
+      }
+    } catch (err) {
+      console.warn('连接验证失败:', err);
+    }
+  };
 
   useEffect(() => {
     if (selectedTable) {
@@ -202,6 +219,19 @@ export function TableBrowser({ connectionId, connections, onConnectionChange }: 
               ))}
             </SelectContent>
           </Select>
+
+          {/* 显示当前选中连接的详细信息 */}
+          {connectionId && (
+            <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg text-sm">
+              <div className="flex items-center gap-2 text-blue-800 dark:text-blue-300">
+                <Database className="h-4 w-4" />
+                <span className="font-semibold">当前数据库：</span>
+                <span className="font-mono">
+                  {connections.find(c => c.id === connectionId)?.database}
+                </span>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

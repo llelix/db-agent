@@ -6,7 +6,6 @@ import { Button } from './ui/button';
 import { QueryResult } from './QueryResult';
 import { ReActFlow } from './ReActFlow';
 import { QueryHistory } from './QueryHistory';
-import { UserMenu } from './user-menu';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
@@ -86,7 +85,7 @@ export function ChatInterface() {
       </div>
 
       <div className="relative max-w-7xl mx-auto px-4 py-8 lg:py-12">
-        {/* Header with User Menu */}
+        {/* Header */}
         <div className="flex items-center justify-between mb-8 animate-slide-up">
           <div className="text-center flex-1">
             <h1 className="text-4xl lg:text-5xl font-bold mb-3 gradient-text">
@@ -96,10 +95,6 @@ export function ChatInterface() {
             <p className="text-slate-600 dark:text-slate-400 text-lg max-w-2xl mx-auto">
               使用自然语言描述您的查询需求，AI 智能体将自动分析并执行
             </p>
-          </div>
-
-          <div className="absolute right-4 top-0">
-            <UserMenu />
           </div>
         </div>
 
