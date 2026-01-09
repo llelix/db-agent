@@ -6,6 +6,9 @@ import { Button } from './ui/button';
 import { QueryResult } from './QueryResult';
 import { ReActFlow } from './ReActFlow';
 import { QueryHistory } from './QueryHistory';
+import { UserMenu } from './user-menu';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 interface QueryResultData {
   result: string;
@@ -16,6 +19,9 @@ interface QueryResultData {
 }
 
 export function ChatInterface() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
   const {
     query,
     result,
@@ -27,6 +33,23 @@ export function ChatInterface() {
     handleQuerySelect,
     setActiveTab,
   } = useQuery();
+
+  // 如果未登录，重定向到登录页
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="h-8 w-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">正在加载...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    router.push('/login');
+    return null;
+  }
 
   // useOptimistic for instant UI updates
   const [optimisticResult, addOptimisticResult] = useOptimistic(
@@ -56,15 +79,21 @@ export function ChatInterface() {
       </div>
 
       <div className="relative max-w-7xl mx-auto px-4 py-8 lg:py-12">
-        {/* Header with Gradient */}
-        <div className="text-center mb-8 animate-slide-up">
-          <h1 className="text-4xl lg:text-5xl font-bold mb-3 gradient-text">
-            数据库查询智能体
-          </h1>
+        {/* Header with User Menu */}
+        <div className="flex items-center justify-between mb-8 animate-slide-up">
+          <div className="text-center flex-1">
+            <h1 className="text-4xl lg:text-5xl font-bold mb-3 gradient-text">
+              数据库查询智能体
+            </h1>
 
-          <p className="text-slate-600 dark:text-slate-400 text-lg max-w-2xl mx-auto">
-            使用自然语言描述您的查询需求，AI 智能体将自动分析并执行
-          </p>
+            <p className="text-slate-600 dark:text-slate-400 text-lg max-w-2xl mx-auto">
+              使用自然语言描述您的查询需求，AI 智能体将自动分析并执行
+            </p>
+          </div>
+
+          <div className="absolute right-4 top-0">
+            <UserMenu />
+          </div>
         </div>
 
         {/* Main Card */}
@@ -111,11 +140,7 @@ export function ChatInterface() {
                   <textarea
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="试试这些查询：
-• 查询所有用户
-• 统计产品总数
-• 最贵的产品是什么
-• 销售总额是多少"
+                    placeholder="试试这些查询：\n• 查询所有用户\n• 统计产品总数\n• 最贵的产品是什么\n• 销售总额是多少"
                     disabled={isPending}
                     className="w-full min-h-[160px] px-5 py-4 rounded-xl border-2 border-slate-200 dark:border-slate-700
                              bg-white dark:bg-slate-950

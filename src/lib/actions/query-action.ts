@@ -3,7 +3,7 @@
 import { DatabaseAgent } from '../../../lib/agent/database-agent';
 import { db } from '../../../lib/database/client';
 import { queryHistory } from '../../../db/schema';
-import { auth, createTestSession } from '../../../lib/auth';
+import { auth } from '@/lib/auth';
 import { eq, and, desc, sql } from 'drizzle-orm';
 
 export interface QueryActionResult {
@@ -26,13 +26,7 @@ export async function executeQueryAction(
   // 获取用户会话
   const session = await auth();
 
-  // 开发环境: 如果没有会话，创建测试会话
-  let sessionData = session;
-  if (!sessionData && process.env.NODE_ENV === 'development') {
-    sessionData = await createTestSession();
-  }
-
-  if (!sessionData?.user?.id) {
+  if (!session?.user?.id) {
     return { error: '未登录或会话已过期' };
   }
 
@@ -59,7 +53,7 @@ export async function executeQueryAction(
 
     // 保存到历史记录
     await db.insert(queryHistory).values({
-      userId: sessionData.user.id,
+      userId: session.user.id,
       naturalLanguageQuery: query,
       generatedSql: result.sql || null,
       result: result.data || null,
@@ -75,7 +69,7 @@ export async function executeQueryAction(
 
     // 保存错误记录
     await db.insert(queryHistory).values({
-      userId: sessionData.user.id,
+      userId: session.user.id,
       naturalLanguageQuery: query,
       status: 'error',
       reactTrace: [{ thought: String(error) }],

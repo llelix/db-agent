@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseAgent } from '../../../../lib/agent/database-agent';
-import { auth, createTestSession } from '../../../../lib/auth';
+import { auth } from '@/lib/auth';
 import { db } from '../../../../lib/database/client';
 import { queryHistory } from '../../../../db/schema';
 import { sql, eq, and } from 'drizzle-orm';
@@ -14,23 +14,7 @@ export async function POST(request: NextRequest) {
     // 1. 认证验证
     const session = await auth();
 
-    // 开发环境: 允许测试
-    let sessionData = session;
-    if (!sessionData && process.env.NODE_ENV === 'development') {
-      // 可选: 允许 API Key 认证
-      const apiKey = request.headers.get('x-api-key');
-      if (apiKey === process.env.TEST_API_KEY) {
-        // 创建临时会话
-        sessionData = await createTestSession();
-      } else {
-        return NextResponse.json(
-          { error: '未授权 - 需要登录或 API Key' },
-          { status: 401 }
-        );
-      }
-    }
-
-    if (!sessionData?.user?.id) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: '未授权 - 需要登录' },
         { status: 401 }
@@ -65,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     // 5. 保存历史记录
     await db.insert(queryHistory).values({
-      userId: sessionData.user.id,
+      userId: session.user.id,
       naturalLanguageQuery: query,
       generatedSql: result.sql || null,
       result: result.data || null,
