@@ -41,6 +41,7 @@ export const config = {
     '/dashboard/:path*',
     '/api/query/:path*',
     '/profile/:path*',
+    '/agent',
 
     /*
      * 排除静态资源和公共路由

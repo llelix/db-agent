@@ -1,6 +1,6 @@
 'use client';
 
-import { useOptimistic } from 'react';
+import { useOptimistic, useEffect } from 'react';
 import { useQuery } from '../lib/hooks/useQuery';
 import { Button } from './ui/button';
 import { QueryResult } from './QueryResult';
@@ -34,7 +34,20 @@ export function ChatInterface() {
     setActiveTab,
   } = useQuery();
 
-  // 如果未登录，重定向到登录页
+  // useOptimistic for instant UI updates - 必须在所有条件判断之前调用
+  const [optimisticResult, addOptimisticResult] = useOptimistic(
+    result,
+    (state, newResult: QueryResultData) => newResult
+  );
+
+  // 使用 useEffect 处理重定向，避免在渲染过程中调用 router.push
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [status, router]);
+
+  // 如果未登录，显示加载状态
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -46,16 +59,10 @@ export function ChatInterface() {
     );
   }
 
+  // 未登录时显示空状态（重定向由 useEffect 处理）
   if (!session) {
-    router.push('/login');
     return null;
   }
-
-  // useOptimistic for instant UI updates
-  const [optimisticResult, addOptimisticResult] = useOptimistic(
-    result,
-    (state, newResult: QueryResultData) => newResult
-  );
 
   // Wrap handleSubmit with optimistic update
   const handleFormSubmit = async (e: React.FormEvent) => {
