@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getQueryHistoryAction } from '@/lib/actions/query-action';
-import { Button } from './ui/button';
+import { Button } from '@radix-ui/themes';
 
 interface QueryHistoryItem {
   id: string;
@@ -128,7 +128,7 @@ export function QueryHistory({ onSelectQuery }: QueryHistoryProps) {
         </div>
         <Button
           variant="ghost"
-          size="sm"
+          size="2"
           onClick={() => loadHistory(pagination.page)}
           disabled={loading}
           className="gap-2"
@@ -204,7 +204,7 @@ export function QueryHistory({ onSelectQuery }: QueryHistoryProps) {
         <div className="glass rounded-xl p-4 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
           <Button
             variant="outline"
-            size="sm"
+            size="2"
             disabled={pagination.page === 1}
             onClick={() => loadHistory(pagination.page - 1)}
             className="gap-2"
@@ -226,7 +226,7 @@ export function QueryHistory({ onSelectQuery }: QueryHistoryProps) {
 
           <Button
             variant="outline"
-            size="sm"
+            size="2"
             disabled={pagination.page === pagination.pages}
             onClick={() => loadHistory(pagination.page + 1)}
             className="gap-2"

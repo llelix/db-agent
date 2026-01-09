@@ -1,29 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Terminal, Play, History, Trash2 } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Loader2, Terminal, Play, History, Trash2, Info } from 'lucide-react';
+import { Flex, Text, Callout, Box, Button, Badge, Table, ScrollArea, TextArea, Dialog } from '@radix-ui/themes';
+import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 
 interface SQLExecutorProps {
   connectionId: string;
@@ -77,7 +57,6 @@ export function SQLExecutor({ connectionId }: SQLExecutorProps) {
 
       if (data.success) {
         setResult(data.data);
-        // 刷新历史记录
         loadHistory();
       }
     } catch (err) {
@@ -132,176 +111,170 @@ export function SQLExecutor({ connectionId }: SQLExecutorProps) {
   };
 
   return (
-    <div className="space-y-4">
-      {/* SQL输入区域 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>
-              <Terminal className="h-5 w-5 inline mr-2" />
-              SQL查询编辑器
-            </span>
-            <div className="flex gap-2">
-              <Dialog open={showHistory} onOpenChange={setShowHistory}>
-                <DialogTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={loadHistoryFromDialog}
-                  >
-                    <History className="h-4 w-4 mr-2" />
+    <Flex direction="column" gap="4">
+      <Flex direction="column" className="border rounded-lg bg-card">
+        <Flex direction="column" gap="1.5" p="6">
+          <Flex justify="between" align="center">
+            <Flex align="center">
+              <Terminal style={{ width: 20, height: 20, marginRight: 8 }} />
+              <Text size="5" weight="bold">SQL查询编辑器</Text>
+            </Flex>
+            <Flex gap="2">
+              <Dialog.Root open={showHistory} onOpenChange={setShowHistory}>
+                <Dialog.Trigger>
+                  <Button variant="outline" size="2" onClick={loadHistoryFromDialog}>
+                    <History style={{ width: 16, height: 16, marginRight: 4 }} />
                     历史记录
                   </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-[800px] max-h-[600px]">
-                  <DialogHeader>
-                    <DialogTitle>查询历史记录</DialogTitle>
-                    <DialogDescription>
-                      最近执行的SQL查询记录
-                    </DialogDescription>
-                  </DialogHeader>
-                  <ScrollArea className="h-[400px] pr-4">
-                    <div className="space-y-3">
+                </Dialog.Trigger>
+                <Dialog.Content style={{ maxWidth: 800, maxHeight: 600 }}>
+                  <Dialog.Title>查询历史记录</Dialog.Title>
+                  <Dialog.Description>
+                    最近执行的SQL查询记录
+                  </Dialog.Description>
+                  <ScrollArea style={{ height: 400, paddingRight: 16 }}>
+                    <Flex direction="column" gap="3">
                       {history.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500">
-                          暂无查询历史
-                        </div>
+                        <Flex justify="center" py="8" className="text-gray-500">
+                          <Text>暂无查询历史</Text>
+                        </Flex>
                       ) : (
                         history.map((item) => (
-                          <Card key={item.id} className="p-3">
-                            <div className="flex items-center justify-between mb-2">
-                              <Badge variant={item.success ? 'default' : 'destructive'}>
+                          <Flex key={item.id} direction="column" gap="2" className="border rounded-lg p-3">
+                            <Flex justify="between" align="center">
+                              <Badge color={item.success ? 'green' : 'red'}>
                                 {item.success ? '成功' : '失败'}
                               </Badge>
-                              <span className="text-xs text-gray-500">
+                              <Text size="1" className="text-gray-500">
                                 {new Date(item.createdAt).toLocaleString()}
-                              </span>
-                            </div>
-                            <div className="text-sm font-mono bg-gray-50 p-2 rounded mb-2 break-all">
+                              </Text>
+                            </Flex>
+                            <Text className="font-mono bg-gray-50 p-2 rounded break-all text-xs">
                               {item.query}
-                            </div>
-                            <div className="text-xs text-gray-600 flex gap-3">
-                              <span>耗时: {item.executionTime}ms</span>
-                              <span>行数: {item.rowCount}</span>
-                            </div>
-                          </Card>
+                            </Text>
+                            <Flex gap="3" className="text-xs text-gray-600">
+                              <Text>耗时: {item.executionTime}ms</Text>
+                              <Text>行数: {item.rowCount}</Text>
+                            </Flex>
+                          </Flex>
                         ))
                       )}
-                    </div>
+                    </Flex>
                   </ScrollArea>
-                  <div className="flex justify-end mt-4">
+                  <Flex justify="end" mt="4">
                     <Button
-                      size="sm"
-                      variant="destructive"
+                      color="red"
+                      size="2"
                       onClick={clearHistory}
                       disabled={history.length === 0}
                     >
-                      <Trash2 className="h-4 w-4 mr-2" />
+                      <Trash2 style={{ width: 16, height: 16, marginRight: 4 }} />
                       清空历史
                     </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+                  </Flex>
+                </Dialog.Content>
+              </Dialog.Root>
 
-              <Button
-                size="sm"
-                onClick={executeQuery}
-                disabled={loading || !sql.trim()}
-              >
+              <Button size="2" onClick={executeQuery} disabled={loading || !sql.trim()}>
                 {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <Loader2 style={{ width: 16, height: 16, marginRight: 4 }} className="animate-spin" />
                 ) : (
-                  <Play className="h-4 w-4 mr-2" />
+                  <Play style={{ width: 16, height: 16, marginRight: 4 }} />
                 )}
                 执行查询
               </Button>
-            </div>
-          </CardTitle>
-          <CardDescription>
+            </Flex>
+          </Flex>
+          <Text size="2" className="text-muted-foreground">
             输入SQL查询语句，支持SELECT、WITH等查询操作
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Textarea
-            value={sql}
-            onChange={(e) => setSql(e.target.value)}
-            placeholder="输入SQL查询语句..."
-            className="font-mono h-32"
-            disabled={loading}
-          />
+          </Text>
+        </Flex>
+        <Box px="6" pb="6">
+          <Flex direction="column" gap="4">
+            <TextArea
+              value={sql}
+              onChange={(e) => setSql(e.target.value)}
+              placeholder="输入SQL查询语句..."
+              style={{ fontFamily: 'monospace', minHeight: 128 }}
+              disabled={loading}
+              size="2"
+            />
 
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+            {error && (
+              <Callout.Root color="red" variant="soft">
+                <Callout.Icon>
+                  <ExclamationTriangleIcon />
+                </Callout.Icon>
+                <Callout.Text>{error}</Callout.Text>
+              </Callout.Root>
+            )}
 
-          {result && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex gap-3">
-                  <Badge>
-                    执行时间: {result.executionTime}ms
-                  </Badge>
-                  <Badge variant="secondary">
-                    返回行数: {result.rowCount}
-                  </Badge>
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setResult(null)}
-                >
-                  清除结果
-                </Button>
-              </div>
+            {result && (
+              <Flex direction="column" gap="3">
+                <Flex justify="between" align="center">
+                  <Flex gap="3">
+                    <Badge>
+                      执行时间: {result.executionTime}ms
+                    </Badge>
+                    <Badge color="gray">
+                      返回行数: {result.rowCount}
+                    </Badge>
+                  </Flex>
+                  <Button variant="outline" size="2" onClick={() => setResult(null)}>
+                    清除结果
+                  </Button>
+                </Flex>
 
-              {result.rowCount === 0 ? (
-                <Alert>
-                  <AlertDescription>
-                    查询执行成功，但未返回任何数据
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <div className="overflow-x-auto border rounded-lg">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        {Object.keys(result.rows[0] || {}).map((key) => (
-                          <TableHead key={key}>{key}</TableHead>
-                        ))}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {result.rows.map((row, idx) => (
-                        <TableRow key={idx}>
-                          {Object.values(row).map((val, i) => (
-                            <TableCell key={i} className="max-w-[200px] truncate" title={String(val)}>
-                              {val === null ? (
-                                <span className="text-gray-400">NULL</span>
-                              ) : typeof val === 'object' ? (
-                                <span className="text-gray-500">[Object]</span>
-                              ) : (
-                                String(val)
-                              )}
-                            </TableCell>
+                {result.rowCount === 0 ? (
+                  <Callout.Root color="blue" variant="soft">
+                    <Callout.Icon>
+                      <Info style={{ width: 16, height: 16 }} />
+                    </Callout.Icon>
+                    <Callout.Text>查询执行成功，但未返回任何数据</Callout.Text>
+                  </Callout.Root>
+                ) : (
+                  <Flex direction="column" className="border rounded-lg overflow-hidden">
+                    <ScrollArea style={{ maxHeight: 400 }}>
+                      <Table.Root>
+                        <Table.Header style={{ position: 'sticky', top: 0, background: 'var(--color-background)' }}>
+                          <Table.Row>
+                            {Object.keys(result.rows[0] || {}).map((key) => (
+                              <Table.ColumnHeaderCell key={key}>{key}</Table.ColumnHeaderCell>
+                            ))}
+                          </Table.Row>
+                        </Table.Header>
+                        <Table.Body>
+                          {result.rows.map((row, idx) => (
+                            <Table.Row key={idx}>
+                              {Object.values(row).map((val, i) => (
+                                <Table.Cell key={i} style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={String(val)}>
+                                  {val === null ? (
+                                    <Text className="text-gray-400">NULL</Text>
+                                  ) : typeof val === 'object' ? (
+                                    <Text className="text-gray-500">[Object]</Text>
+                                  ) : (
+                                    String(val)
+                                  )}
+                                </Table.Cell>
+                              ))}
+                            </Table.Row>
                           ))}
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </div>
-          )}
+                        </Table.Body>
+                      </Table.Root>
+                    </ScrollArea>
+                  </Flex>
+                )}
+              </Flex>
+            )}
 
-          <div className="text-xs text-gray-500 space-y-1">
-            <p><strong>支持的操作：</strong> SELECT, WITH, EXPLAIN, DESCRIBE, SHOW</p>
-            <p><strong>限制：</strong> 禁止执行 INSERT, UPDATE, DELETE, DROP 等修改操作</p>
-            <p><strong>安全：</strong> 所有查询都会被记录，包含敏感操作的查询将被阻止</p>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+            <Flex direction="column" gap="1" className="text-xs text-gray-500">
+              <Text><strong>支持的操作：</strong> SELECT, WITH, EXPLAIN, DESCRIBE, SHOW</Text>
+              <Text><strong>限制：</strong> 禁止执行 INSERT, UPDATE, DELETE, DROP 等修改操作</Text>
+              <Text><strong>安全：</strong> 所有查询都会被记录，包含敏感操作的查询将被阻止</Text>
+            </Flex>
+          </Flex>
+        </Box>
+      </Flex>
+    </Flex>
   );
 }

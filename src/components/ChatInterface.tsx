@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useQuery } from '@/lib/hooks/useQuery';
-import { Button } from './ui/button';
+import { Button } from '@radix-ui/themes';
 import { QueryResult } from './QueryResult';
 import { ReActFlow } from './ReActFlow';
 import { QueryHistory } from './QueryHistory';
@@ -86,8 +86,8 @@ export function ChatInterface() {
           <div className="border-b border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg">
             <nav className="flex gap-1 p-2">
               <Button
-                variant={activeTab === 'query' ? 'gradient' : 'ghost'}
-                size="sm"
+                variant={activeTab === 'query' ? 'solid' : 'ghost'}
+                size="2"
                 onClick={() => setActiveTab('query')}
                 className="gap-2"
               >
@@ -98,8 +98,8 @@ export function ChatInterface() {
               </Button>
 
               <Button
-                variant={activeTab === 'history' ? 'gradient' : 'ghost'}
-                size="sm"
+                variant={activeTab === 'history' ? 'solid' : 'ghost'}
+                size="2"
                 onClick={() => setActiveTab('history')}
                 className="gap-2"
               >
@@ -150,9 +150,9 @@ export function ChatInterface() {
                   type="submit"
                   onClick={handleFormSubmit}
                   disabled={!query || !query.trim() || isPending}
-                  variant="gradient"
-                  size="lg"
-                  className="gap-2 min-w-[140px] shadow-lg shadow-violet-500/30"
+                  variant="solid"
+                  size="3"
+                  className="gap-2 min-w-[140px] bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700 shadow-lg shadow-violet-500/30"
                 >
                   {isPending ? (
                     <>
@@ -171,7 +171,7 @@ export function ChatInterface() {
 
                 <Button
                   variant="ghost"
-                  size="lg"
+                  size="3"
                   onClick={() => setQuery('')}
                   className="gap-2"
                 >

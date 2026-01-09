@@ -1,27 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, History, Trash2, Filter, Database } from 'lucide-react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Flex, Text, Callout, Box, Button, Badge, Table, ScrollArea, SegmentedControl, Grid } from '@radix-ui/themes';
+import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
+import { Loader2, History, Trash2, Filter, Database, RefreshCw } from 'lucide-react';
 
 interface HistoryEntry {
   id: string;
@@ -101,22 +83,17 @@ export function HistoryViewer() {
     }
   };
 
-  const getActionBadge = (action: string) => {
-    const styles = {
-      create: 'bg-blue-500',
-      update: 'bg-yellow-500',
-      delete: 'bg-red-500',
-      test: 'bg-green-500',
-      browse: 'bg-purple-500',
-      query: 'bg-indigo-500',
-      security: 'bg-orange-500',
+  const getActionBadgeColor = (action: string) => {
+    const colors = {
+      create: 'blue',
+      update: 'orange',
+      delete: 'red',
+      test: 'green',
+      browse: 'purple',
+      query: 'indigo',
+      security: 'amber',
     } as const;
-
-    return (
-      <Badge className={styles[action as keyof typeof styles] || 'bg-gray-500'}>
-        {action}
-      </Badge>
-    );
+    return colors[action as keyof typeof colors] || 'gray';
   };
 
   const getConnectionName = (connectionId: string | null) => {
@@ -132,167 +109,163 @@ export function HistoryViewer() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-8">
+      <Flex align="center" justify="center" py="8">
         <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
-        <span className="ml-2 text-gray-500">加载中...</span>
-      </div>
+        <Text ml="2" className="text-gray-500">加载中...</Text>
+      </Flex>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <Flex direction="column" gap="4">
       {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+        <Callout.Root color="red" variant="soft">
+          <Callout.Icon>
+            <ExclamationTriangleIcon />
+          </Callout.Icon>
+          <Callout.Text>{error}</Callout.Text>
+        </Callout.Root>
       )}
 
-      {/* 过滤器 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>
-              <History className="h-5 w-5 inline mr-2" />
-              操作历史记录
-            </span>
+      <Box>
+        <Flex direction="column" gap="4">
+          <Flex justify="between" align="center" gap="4">
+            <Flex align="center" gap="2">
+              <History className="h-5 w-5" />
+              <Text size="5" weight="bold">操作历史记录</Text>
+            </Flex>
             <Button
-              size="sm"
-              variant="destructive"
+              color="red"
+              size="2"
               onClick={clearHistory}
               disabled={history.length === 0}
             >
               <Trash2 className="h-4 w-4 mr-2" />
               清空记录
             </Button>
-          </CardTitle>
-          <CardDescription>
+          </Flex>
+
+          <Text size="2" className="text-gray-600">
             查看所有数据库连接操作的历史记录
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4 mb-4 flex-wrap">
-            <div className="flex items-center gap-2">
+          </Text>
+
+          <Flex gap="4" wrap="wrap" align="center">
+            <Flex gap="2" align="center">
               <Filter className="h-4 w-4 text-gray-500" />
-              <Select
+              <SegmentedControl.Root
                 value={filterConnection}
                 onValueChange={setFilterConnection}
               >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="选择连接" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">所有连接</SelectItem>
-                  {connections.map((conn) => (
-                    <SelectItem key={conn.id} value={conn.id}>
-                      {conn.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                <SegmentedControl.Item value="all">所有连接</SegmentedControl.Item>
+                {connections.map((conn) => (
+                  <SegmentedControl.Item key={conn.id} value={conn.id}>
+                    {conn.name}
+                  </SegmentedControl.Item>
+                ))}
+              </SegmentedControl.Root>
+            </Flex>
 
-            <div className="flex items-center gap-2">
+            <Flex gap="2" align="center">
               <Database className="h-4 w-4 text-gray-500" />
-              <Select
+              <SegmentedControl.Root
                 value={filterAction}
                 onValueChange={setFilterAction}
               >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="选择操作类型" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">所有操作</SelectItem>
-                  <SelectItem value="create">创建</SelectItem>
-                  <SelectItem value="update">更新</SelectItem>
-                  <SelectItem value="delete">删除</SelectItem>
-                  <SelectItem value="test">测试</SelectItem>
-                  <SelectItem value="browse">浏览</SelectItem>
-                  <SelectItem value="query">查询</SelectItem>
-                  <SelectItem value="security">安全</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                <SegmentedControl.Item value="all">所有操作</SegmentedControl.Item>
+                <SegmentedControl.Item value="create">创建</SegmentedControl.Item>
+                <SegmentedControl.Item value="update">更新</SegmentedControl.Item>
+                <SegmentedControl.Item value="delete">删除</SegmentedControl.Item>
+                <SegmentedControl.Item value="test">测试</SegmentedControl.Item>
+                <SegmentedControl.Item value="browse">浏览</SegmentedControl.Item>
+                <SegmentedControl.Item value="query">查询</SegmentedControl.Item>
+                <SegmentedControl.Item value="security">安全</SegmentedControl.Item>
+              </SegmentedControl.Root>
+            </Flex>
 
-            <Button size="sm" onClick={loadHistory}>
+            <Button size="2" onClick={loadHistory} variant="soft">
+              <RefreshCw className="h-4 w-4 mr-2" />
               刷新
             </Button>
-          </div>
+          </Flex>
 
           {history.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              暂无历史记录
-            </div>
+            <Flex justify="center" py="8" className="text-gray-500">
+              <Text size="3">暂无历史记录</Text>
+            </Flex>
           ) : (
-            <ScrollArea className="h-[500px] pr-4">
-              <Table>
-                <TableHeader className="sticky top-0 bg-white">
-                  <TableRow>
-                    <TableHead>时间</TableHead>
-                    <TableHead>连接</TableHead>
-                    <TableHead>操作</TableHead>
-                    <TableHead>详情</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+            <ScrollArea style={{ height: 500 }}>
+              <Table.Root>
+                <Table.Header>
+                  <Table.Row>
+                    <Table.ColumnHeaderCell>时间</Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell>连接</Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell>操作</Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell>详情</Table.ColumnHeaderCell>
+                  </Table.Row>
+                </Table.Header>
+                <Table.Body>
                   {history.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="text-xs text-gray-600 whitespace-nowrap">
-                        {new Date(item.createdAt).toLocaleString()}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
+                    <Table.Row key={item.id}>
+                      <Table.Cell>
+                        <Text size="2" className="text-gray-600">
+                          {new Date(item.createdAt).toLocaleString()}
+                        </Text>
+                      </Table.Cell>
+                      <Table.Cell>
+                        <Badge color="gray" variant="soft">
                           {getConnectionName(item.connectionId)}
                         </Badge>
-                      </TableCell>
-                      <TableCell>{getActionBadge(item.action)}</TableCell>
-                      <TableCell className="max-w-[300px]">
-                        <div className="text-xs text-gray-700 break-all">
+                      </Table.Cell>
+                      <Table.Cell>
+                        <Badge color={getActionBadgeColor(item.action)} variant="solid">
+                          {item.action}
+                        </Badge>
+                      </Table.Cell>
+                      <Table.Cell>
+                        <Text size="2" className="text-gray-700" style={{ maxWidth: 300, wordBreak: 'break-all' }}>
                           {formatDetails(item.details)}
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                        </Text>
+                      </Table.Cell>
+                    </Table.Row>
                   ))}
-                </TableBody>
-              </Table>
+                </Table.Body>
+              </Table.Root>
             </ScrollArea>
           )}
-        </CardContent>
-      </Card>
+        </Flex>
+      </Box>
 
-      {/* 统计信息 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>统计信息</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">
+      <Box>
+        <Flex direction="column" gap="4">
+          <Text size="4" weight="bold">统计信息</Text>
+          <Grid columns="2" gap="4">
+            <Box className="text-center p-4 bg-blue-50 rounded-lg">
+              <Text size="6" weight="bold" className="text-blue-600">
                 {history.filter(h => h.action === 'create').length}
-              </div>
-              <div className="text-sm text-gray-600">创建连接</div>
-            </div>
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">
+              </Text>
+              <Text size="2" className="text-gray-600">创建连接</Text>
+            </Box>
+            <Box className="text-center p-4 bg-green-50 rounded-lg">
+              <Text size="6" weight="bold" className="text-green-600">
                 {history.filter(h => h.action === 'test').length}
-              </div>
-              <div className="text-sm text-gray-600">连接测试</div>
-            </div>
-            <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <div className="text-2xl font-bold text-purple-600">
+              </Text>
+              <Text size="2" className="text-gray-600">连接测试</Text>
+            </Box>
+            <Box className="text-center p-4 bg-purple-50 rounded-lg">
+              <Text size="6" weight="bold" className="text-purple-600">
                 {history.filter(h => h.action === 'browse').length}
-              </div>
-              <div className="text-sm text-gray-600">浏览操作</div>
-            </div>
-            <div className="text-center p-4 bg-indigo-50 rounded-lg">
-              <div className="text-2xl font-bold text-indigo-600">
+              </Text>
+              <Text size="2" className="text-gray-600">浏览操作</Text>
+            </Box>
+            <Box className="text-center p-4 bg-indigo-50 rounded-lg">
+              <Text size="6" weight="bold" className="text-indigo-600">
                 {history.filter(h => h.action === 'query').length}
-              </div>
-              <div className="text-sm text-gray-600">SQL查询</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+              </Text>
+              <Text size="2" className="text-gray-600">SQL查询</Text>
+            </Box>
+          </Grid>
+        </Flex>
+      </Box>
+    </Flex>
   );
 }

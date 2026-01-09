@@ -1,38 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Plus, Trash2, Play, Edit, CheckCircle2, XCircle } from 'lucide-react';
+import { Loader2, Plus, Trash2, Play, Edit } from 'lucide-react';
 import type { DbConnection } from '@db/schema';
+import { Flex, Text, Box, Button, Badge, Table, ScrollArea, Dialog, TextField, Checkbox, Grid, Callout } from '@radix-ui/themes';
+import { CheckCircledIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons';
 
 interface ConnectionManagerProps {
   connections: DbConnection[];
@@ -59,7 +31,6 @@ export function ConnectionManager({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // 表单状态
   const [formData, setFormData] = useState({
     name: '',
     host: '',
@@ -214,336 +185,282 @@ export function ConnectionManager({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-8">
+      <Flex align="center" justify="center" py="8">
         <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
-        <span className="ml-2 text-gray-500">加载中...</span>
-      </div>
+        <Text ml="2" className="text-gray-500">加载中...</Text>
+      </Flex>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <Flex direction="column" gap="4">
       {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+        <Callout.Root color="red" variant="soft">
+          <Callout.Icon>
+            <ExclamationTriangleIcon />
+          </Callout.Icon>
+          <Callout.Text>{error}</Callout.Text>
+        </Callout.Root>
       )}
 
       {success && (
-        <Alert className="border-green-500 bg-green-50">
-          <AlertDescription className="text-green-700">{success}</AlertDescription>
-        </Alert>
+        <Callout.Root color="green" variant="soft">
+          <Callout.Icon>
+            <CheckCircledIcon />
+          </Callout.Icon>
+          <Callout.Text>{success}</Callout.Text>
+        </Callout.Root>
       )}
 
-      {/* 连接列表 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>已配置的连接</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <Flex direction="column" className="border rounded-lg bg-card">
+        <Flex direction="column" gap="1.5" p="6">
+          <Text size="5" weight="bold">已配置的连接</Text>
+        </Flex>
+        <Box px="6" pb="6">
           {connections.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              暂无数据库连接，请点击"新建连接"添加
-            </div>
+            <Flex justify="center" py="8" className="text-gray-500">
+              <Text>暂无数据库连接，请点击"新建连接"添加</Text>
+            </Flex>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>名称</TableHead>
-                  <TableHead>主机</TableHead>
-                  <TableHead>数据库</TableHead>
-                  <TableHead>状态</TableHead>
-                  <TableHead>操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {connections.map((conn) => (
-                  <TableRow
-                    key={conn.id}
-                    className={`cursor-pointer ${selectedConnection === conn.id ? 'bg-blue-50' : ''}`}
-                    onClick={() => onSelectConnection(conn.id)}
-                  >
-                    <TableCell className="font-medium">
-                      {conn.name}
-                      {selectedConnection === conn.id && (
-                        <Badge className="ml-2" variant="secondary">当前</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>{conn.host}:{conn.port}</TableCell>
-                    <TableCell>{conn.database}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={conn.ssl ? 'default' : 'secondary'}
-                        className={conn.ssl ? 'bg-green-500' : ''}
-                      >
-                        {conn.ssl ? 'SSL' : '普通'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleTest(conn)}
-                          disabled={testing === conn.id}
-                        >
-                          {testing === conn.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Play className="h-4 w-4" />
+            <ScrollArea>
+              <Table.Root>
+                <Table.Header>
+                  <Table.Row>
+                    <Table.ColumnHeaderCell>名称</Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell>主机</Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell>数据库</Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell>状态</Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell>操作</Table.ColumnHeaderCell>
+                  </Table.Row>
+                </Table.Header>
+                <Table.Body>
+                  {connections.map((conn) => (
+                    <Table.Row
+                      key={conn.id}
+                      style={{
+                        cursor: 'pointer',
+                        backgroundColor: selectedConnection === conn.id ? 'var(--blue-2)' : undefined
+                      }}
+                      onClick={() => onSelectConnection(conn.id)}
+                    >
+                      <Table.Cell>
+                        <Flex align="center" gap="2">
+                          <Text weight="medium">{conn.name}</Text>
+                          {selectedConnection === conn.id && (
+                            <Badge color="blue" variant="soft">当前</Badge>
                           )}
-                        </Button>
+                        </Flex>
+                      </Table.Cell>
+                      <Table.Cell>{conn.host}:{conn.port}</Table.Cell>
+                      <Table.Cell>{conn.database}</Table.Cell>
+                      <Table.Cell>
+                        <Badge color={conn.ssl ? 'green' : 'gray'} variant="soft">
+                          {conn.ssl ? 'SSL' : '普通'}
+                        </Badge>
+                      </Table.Cell>
+                      <Table.Cell onClick={(e) => e.stopPropagation()}>
+                        <Flex gap="2">
+                          <Button
+                            size="2"
+                            variant="outline"
+                            onClick={() => handleTest(conn)}
+                            disabled={testing === conn.id}
+                          >
+                            {testing === conn.id ? (
+                              <Loader2 style={{ width: 16, height: 16 }} className="animate-spin" />
+                            ) : (
+                              <Play style={{ width: 16, height: 16 }} />
+                            )}
+                          </Button>
 
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => openEditDialog(conn)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
+                          <Button
+                            size="2"
+                            variant="outline"
+                            onClick={() => openEditDialog(conn)}
+                          >
+                            <Edit style={{ width: 16, height: 16 }} />
+                          </Button>
 
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(conn)}
-                          disabled={deleting === conn.id}
-                        >
-                          {deleting === conn.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                          <Button
+                            size="2"
+                            color="red"
+                            onClick={() => handleDelete(conn)}
+                            disabled={deleting === conn.id}
+                          >
+                            {deleting === conn.id ? (
+                              <Loader2 style={{ width: 16, height: 16 }} className="animate-spin" />
+                            ) : (
+                              <Trash2 style={{ width: 16, height: 16 }} />
+                            )}
+                          </Button>
+                        </Flex>
+                      </Table.Cell>
+                    </Table.Row>
+                  ))}
+                </Table.Body>
+              </Table.Root>
+            </ScrollArea>
           )}
-        </CardContent>
-        <CardFooter>
-          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-            <DialogTrigger asChild>
+        </Box>
+        <Box px="6" pb="6">
+          <Dialog.Root open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+            <Dialog.Trigger>
               <Button onClick={resetForm}>
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus style={{ width: 16, height: 16, marginRight: 4 }} />
                 新建连接
               </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>新建数据库连接</DialogTitle>
-                <DialogDescription>
-                  配置PostgreSQL数据库连接信息，连接将自动测试
-                </DialogDescription>
-              </DialogHeader>
+            </Dialog.Trigger>
+            <Dialog.Content style={{ maxWidth: 500 }}>
+              <Dialog.Title>新建数据库连接</Dialog.Title>
+              <Dialog.Description>
+                配置PostgreSQL数据库连接信息，连接将自动测试
+              </Dialog.Description>
 
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name" className="font-semibold text-foreground">
-                      连接名称
-                    </Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="生产数据库"
-                      className="bg-white dark:bg-[hsl(var(--secondary))] border-2 focus:bg-[hsl(var(--accent))] dark:focus:bg-[hsl(var(--accent))]"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="port" className="font-semibold text-foreground">
-                      端口
-                    </Label>
-                    <Input
-                      id="port"
-                      type="number"
-                      value={formData.port}
-                      onChange={(e) => setFormData({ ...formData, port: parseInt(e.target.value) || 5432 })}
-                      className="bg-white dark:bg-[hsl(var(--secondary))] border-2 focus:bg-[hsl(var(--accent))] dark:focus:bg-[hsl(var(--accent))]"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="host" className="font-semibold text-foreground">
-                    主机地址
-                  </Label>
-                  <Input
-                    id="host"
-                    value={formData.host}
-                    onChange={(e) => setFormData({ ...formData, host: e.target.value })}
-                    placeholder="localhost"
-                    className="bg-white dark:bg-[hsl(var(--secondary))] border-2 focus:bg-[hsl(var(--accent))] dark:focus:bg-[hsl(var(--accent))]"
+              <Grid columns="2" gap="4" mt="4">
+                <Flex direction="column" gap="2">
+                  <Text size="2" weight="bold">连接名称</Text>
+                  <TextField.Root
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="生产数据库"
                   />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="database" className="font-semibold text-foreground">
-                    数据库名
-                  </Label>
-                  <Input
-                    id="database"
-                    value={formData.database}
-                    onChange={(e) => setFormData({ ...formData, database: e.target.value })}
-                    placeholder="mydb"
-                    className="bg-white dark:bg-[hsl(var(--secondary))] border-2 focus:bg-[hsl(var(--accent))] dark:focus:bg-[hsl(var(--accent))]"
+                </Flex>
+                <Flex direction="column" gap="2">
+                  <Text size="2" weight="bold">端口</Text>
+                  <TextField.Root
+                    type="number"
+                    value={formData.port}
+                    onChange={(e) => setFormData({ ...formData, port: parseInt(e.target.value) || 5432 })}
                   />
-                </div>
+                </Flex>
+              </Grid>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="username" className="font-semibold text-foreground">
-                      用户名
-                    </Label>
-                    <Input
-                      id="username"
-                      value={formData.username}
-                      onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                      placeholder="postgres"
-                      className="bg-white dark:bg-[hsl(var(--secondary))] border-2 focus:bg-[hsl(var(--accent))] dark:focus:bg-[hsl(var(--accent))]"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="password" className="font-semibold text-foreground">
-                      密码
-                    </Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      placeholder="••••••••"
-                      className="bg-white dark:bg-[hsl(var(--secondary))] border-2 focus:bg-[hsl(var(--accent))] dark:focus:bg-[hsl(var(--accent))]"
-                    />
-                  </div>
-                </div>
+              <Flex direction="column" gap="2" mt="4">
+                <Text size="2" weight="bold">主机地址</Text>
+                <TextField.Root
+                  value={formData.host}
+                  onChange={(e) => setFormData({ ...formData, host: e.target.value })}
+                  placeholder="localhost"
+                />
+              </Flex>
 
-                <div className="flex items-center space-x-2 rounded-lg border border-[hsl(var(--border))] p-3 bg-[hsl(var(--background))] dark:bg-[hsl(var(--secondary))]">
-                  <Checkbox
-                    id="ssl"
-                    checked={formData.ssl}
-                    onCheckedChange={(checked) => setFormData({ ...formData, ssl: !!checked })}
+              <Flex direction="column" gap="2" mt="4">
+                <Text size="2" weight="bold">数据库名</Text>
+                <TextField.Root
+                  value={formData.database}
+                  onChange={(e) => setFormData({ ...formData, database: e.target.value })}
+                  placeholder="mydb"
+                />
+              </Flex>
+
+              <Grid columns="2" gap="4" mt="4">
+                <Flex direction="column" gap="2">
+                  <Text size="2" weight="bold">用户名</Text>
+                  <TextField.Root
+                    value={formData.username}
+                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                    placeholder="postgres"
                   />
-                  <Label htmlFor="ssl" className="font-semibold text-foreground cursor-pointer">
-                    使用SSL连接
-                  </Label>
-                </div>
-              </div>
+                </Flex>
+                <Flex direction="column" gap="2">
+                  <Text size="2" weight="bold">密码</Text>
+                  <TextField.Root
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    placeholder="••••••••"
+                  />
+                </Flex>
+              </Grid>
 
-              <DialogFooter>
+              <Flex align="center" gap="2" mt="4" className="border rounded-lg p-3">
+                <Checkbox
+                  checked={formData.ssl}
+                  onCheckedChange={(checked) => setFormData({ ...formData, ssl: !!checked })}
+                />
+                <Text size="2" weight="bold">使用SSL连接</Text>
+              </Flex>
+
+              <Flex justify="end" gap="2" mt="4">
                 <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
                   取消
                 </Button>
                 <Button onClick={handleCreate}>创建连接</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </CardFooter>
-      </Card>
+              </Flex>
+            </Dialog.Content>
+          </Dialog.Root>
+        </Box>
+      </Flex>
 
-      {/* 编辑对话框 */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>编辑数据库连接</DialogTitle>
-            <DialogDescription>
-              更新连接配置信息
-            </DialogDescription>
-          </DialogHeader>
+      <Dialog.Root open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <Dialog.Content style={{ maxWidth: 500 }}>
+          <Dialog.Title>编辑数据库连接</Dialog.Title>
+          <Dialog.Description>
+            更新连接配置信息
+          </Dialog.Description>
 
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-name" className="font-semibold text-foreground">
-                  连接名称
-                </Label>
-                <Input
-                  id="edit-name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="bg-white dark:bg-[hsl(var(--secondary))] border-2 focus:bg-[hsl(var(--accent))] dark:focus:bg-[hsl(var(--accent))]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-port" className="font-semibold text-foreground">
-                  端口
-                </Label>
-                <Input
-                  id="edit-port"
-                  type="number"
-                  value={formData.port}
-                  onChange={(e) => setFormData({ ...formData, port: parseInt(e.target.value) || 5432 })}
-                  className="bg-white dark:bg-[hsl(var(--secondary))] border-2 focus:bg-[hsl(var(--accent))] dark:focus:bg-[hsl(var(--accent))]"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-host" className="font-semibold text-foreground">
-                主机地址
-              </Label>
-              <Input
-                id="edit-host"
-                value={formData.host}
-                onChange={(e) => setFormData({ ...formData, host: e.target.value })}
-                className="bg-white dark:bg-[hsl(var(--secondary))] border-2 focus:bg-[hsl(var(--accent))] dark:focus:bg-[hsl(var(--accent))]"
+          <Grid columns="2" gap="4" mt="4">
+            <Flex direction="column" gap="2">
+              <Text size="2" weight="bold">连接名称</Text>
+              <TextField.Root
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-database" className="font-semibold text-foreground">
-                数据库名
-              </Label>
-              <Input
-                id="edit-database"
-                value={formData.database}
-                onChange={(e) => setFormData({ ...formData, database: e.target.value })}
-                className="bg-white dark:bg-[hsl(var(--secondary))] border-2 focus:bg-[hsl(var(--accent))] dark:focus:bg-[hsl(var(--accent))]"
+            </Flex>
+            <Flex direction="column" gap="2">
+              <Text size="2" weight="bold">端口</Text>
+              <TextField.Root
+                type="number"
+                value={formData.port}
+                onChange={(e) => setFormData({ ...formData, port: parseInt(e.target.value) || 5432 })}
               />
-            </div>
+            </Flex>
+          </Grid>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-username" className="font-semibold text-foreground">
-                  用户名
-                </Label>
-                <Input
-                  id="edit-username"
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  className="bg-white dark:bg-[hsl(var(--secondary))] border-2 focus:bg-[hsl(var(--accent))] dark:focus:bg-[hsl(var(--accent))]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-password" className="font-semibold text-foreground">
-                  新密码 (留空不修改)
-                </Label>
-                <Input
-                  id="edit-password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder="••••••••"
-                  className="bg-white dark:bg-[hsl(var(--secondary))] border-2 focus:bg-[hsl(var(--accent))] dark:focus:bg-[hsl(var(--accent))]"
-                />
-              </div>
-            </div>
+          <Flex direction="column" gap="2" mt="4">
+            <Text size="2" weight="bold">主机地址</Text>
+            <TextField.Root
+              value={formData.host}
+              onChange={(e) => setFormData({ ...formData, host: e.target.value })}
+            />
+          </Flex>
 
-            <div className="flex items-center space-x-2 rounded-lg border border-[hsl(var(--border))] p-3 bg-[hsl(var(--background))] dark:bg-[hsl(var(--secondary))]">
-              <Checkbox
-                id="edit-ssl"
-                checked={formData.ssl}
-                onCheckedChange={(checked) => setFormData({ ...formData, ssl: !!checked })}
+          <Flex direction="column" gap="2" mt="4">
+            <Text size="2" weight="bold">数据库名</Text>
+            <TextField.Root
+              value={formData.database}
+              onChange={(e) => setFormData({ ...formData, database: e.target.value })}
+            />
+          </Flex>
+
+          <Grid columns="2" gap="4" mt="4">
+            <Flex direction="column" gap="2">
+              <Text size="2" weight="bold">用户名</Text>
+              <TextField.Root
+                value={formData.username}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
               />
-              <Label htmlFor="edit-ssl" className="font-semibold text-foreground cursor-pointer">
-                使用SSL连接
-              </Label>
-            </div>
-          </div>
+            </Flex>
+            <Flex direction="column" gap="2">
+              <Text size="2" weight="bold">新密码 (留空不修改)</Text>
+              <TextField.Root
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                placeholder="••••••••"
+              />
+            </Flex>
+          </Grid>
 
-          <DialogFooter>
+          <Flex align="center" gap="2" mt="4" className="border rounded-lg p-3">
+            <Checkbox
+              checked={formData.ssl}
+              onCheckedChange={(checked) => setFormData({ ...formData, ssl: !!checked })}
+            />
+            <Text size="2" weight="bold">使用SSL连接</Text>
+          </Flex>
+
+          <Flex justify="end" gap="2" mt="4">
             <Button
               variant="outline"
               onClick={() => {
@@ -554,9 +471,9 @@ export function ConnectionManager({
               取消
             </Button>
             <Button onClick={handleUpdate}>更新连接</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+          </Flex>
+        </Dialog.Content>
+      </Dialog.Root>
+    </Flex>
   );
 }

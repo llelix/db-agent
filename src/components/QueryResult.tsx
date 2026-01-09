@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from './ui/button';
+import { Button } from '@radix-ui/themes';
 
 interface QueryResultData {
   result: string;
@@ -213,7 +213,7 @@ export function QueryResult({ result, loading = false }: QueryResultProps) {
       <div className="flex flex-wrap gap-2">
         <Button
           variant="outline"
-          size="sm"
+          size="2"
           className="gap-2"
           onClick={() => {
             if (result.sql) {
@@ -231,7 +231,7 @@ export function QueryResult({ result, loading = false }: QueryResultProps) {
         {hasData && (
           <Button
             variant="outline"
-            size="sm"
+            size="2"
             className="gap-2"
             onClick={() => {
               const csv = convertToCSV(result.data!);
