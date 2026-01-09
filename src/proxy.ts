@@ -10,7 +10,7 @@ import type { NextRequest } from 'next/server';
  * 但为了兼容性和路由保护，这里仍使用中间件
  */
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const session = await auth();
 
   // 如果用户未登录且尝试访问受保护路由，重定向到登录页
