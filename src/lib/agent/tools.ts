@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { db } from '../database/client';
-import { sql, eq, and, desc } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 
 // 输入验证 Schema
 const executeSQLSchema = z.object({

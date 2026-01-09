@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { UserMenu } from '@/components/user-menu';
 import { SessionProvider } from '@/components/session-provider';
+import { DbSwitcher } from '@/components/db-switcher';
 import Link from 'next/link';
 import { Database, Terminal } from 'lucide-react';
 import './globals.css';
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                   </div>
 
                   <div className="flex items-center gap-4">
+                    <DbSwitcher />
                     <UserMenu />
                   </div>
                 </div>

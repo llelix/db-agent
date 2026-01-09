@@ -66,7 +66,7 @@ export function ChatInterface() {
   // Wrap handleSubmit with optimistic update
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!query.trim() || isPending) return;
+    if (!query || !query.trim() || isPending) return;
 
     // 乐观更新 - 立即显示处理状态
     addOptimisticResult({
@@ -167,7 +167,7 @@ export function ChatInterface() {
                 <Button
                   type="submit"
                   onClick={handleFormSubmit}
-                  disabled={!query.trim() || isPending}
+                  disabled={!query || !query.trim() || isPending}
                   variant="gradient"
                   size="lg"
                   className="gap-2 min-w-[140px] shadow-lg shadow-violet-500/30"

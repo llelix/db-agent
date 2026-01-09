@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useDbContext } from '@/lib/db-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -15,21 +16,7 @@ import {
 } from '@/components/ui/table';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Loader2, Database, Table as TableIcon, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
-import type { DbConnection } from '@db/schema';
-
-interface TableBrowserProps {
-  connectionId: string | null;
-  connections: DbConnection[];
-  onConnectionChange: (connectionId: string) => void;
-}
 
 interface TableInfo {
   name: string;
@@ -52,7 +39,8 @@ interface TableData {
   };
 }
 
-export function TableBrowser({ connectionId, connections, onConnectionChange }: TableBrowserProps) {
+export function TableBrowser() {
+  const { selectedConnectionId, selectedConnection } = useDbContext();
   const [tables, setTables] = useState<string[]>([]);
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [tableInfo, setTableInfo] = useState<TableInfo | null>(null);
@@ -62,9 +50,9 @@ export function TableBrowser({ connectionId, connections, onConnectionChange }: 
   const [activeTab, setActiveTab] = useState<'list' | 'structure' | 'data'>('list');
 
   useEffect(() => {
-    if (connectionId) {
+    if (selectedConnectionId) {
       // 验证连接并清除可能的缓存
-      validateAndClearCache(connectionId);
+      validateAndClearCache(selectedConnectionId);
       loadTables();
       // 切换连接时重置表选择
       setSelectedTable(null);
@@ -72,7 +60,7 @@ export function TableBrowser({ connectionId, connections, onConnectionChange }: 
       setTableData(null);
       setActiveTab('list');
     }
-  }, [connectionId]);
+  }, [selectedConnectionId]);
 
   const validateAndClearCache = async (connId: string) => {
     try {
@@ -100,11 +88,13 @@ export function TableBrowser({ connectionId, connections, onConnectionChange }: 
   }, [selectedTable, activeTab]);
 
   const loadTables = async () => {
+    if (!selectedConnectionId) return;
+
     try {
       setLoading(true);
       setError(null);
 
-      const res = await fetch(`/api/db/${connectionId}/tables`);
+      const res = await fetch(`/api/db/${selectedConnectionId}/tables`);
       if (!res.ok) {
         throw new Error('加载表列表失败');
       }
@@ -123,13 +113,13 @@ export function TableBrowser({ connectionId, connections, onConnectionChange }: 
   };
 
   const loadTableStructure = async () => {
-    if (!selectedTable) return;
+    if (!selectedConnectionId || !selectedTable) return;
 
     try {
       setLoading(true);
       setError(null);
 
-      const res = await fetch(`/api/db/${connectionId}/tables/${selectedTable}`);
+      const res = await fetch(`/api/db/${selectedConnectionId}/tables/${selectedTable}`);
       if (!res.ok) {
         throw new Error('加载表结构失败');
       }
@@ -148,13 +138,13 @@ export function TableBrowser({ connectionId, connections, onConnectionChange }: 
   };
 
   const loadTableData = async (offset = 0) => {
-    if (!selectedTable) return;
+    if (!selectedConnectionId || !selectedTable) return;
 
     try {
       setLoading(true);
       setError(null);
 
-      const res = await fetch(`/api/db/${connectionId}/data/${selectedTable}?limit=50&offset=${offset}`);
+      const res = await fetch(`/api/db/${selectedConnectionId}/data/${selectedTable}?limit=50&offset=${offset}`);
       if (!res.ok) {
         throw new Error('加载表数据失败');
       }
@@ -193,50 +183,17 @@ export function TableBrowser({ connectionId, connections, onConnectionChange }: 
         </Alert>
       )}
 
-      {/* 连接选择器 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>选择数据库连接</CardTitle>
-          <CardDescription>
-            从已配置的连接中选择一个来浏览数据表
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Select
-            value={connectionId || ''}
-            onValueChange={onConnectionChange}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder={connections.length > 0 ? "请选择连接..." : "暂无可用连接"}>
-                {connectionId ? connections.find(c => c.id === connectionId)?.name : ""}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {connections.map((conn) => (
-                <SelectItem key={conn.id} value={conn.id}>
-                  {conn.name} ({conn.host}:{conn.port}/{conn.database})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* 显示当前选中连接的详细信息 */}
-          {connectionId && (
-            <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg text-sm">
-              <div className="flex items-center gap-2 text-blue-800 dark:text-blue-300">
-                <Database className="h-4 w-4" />
-                <span className="font-semibold">当前数据库：</span>
-                <span className="font-mono">
-                  {connections.find(c => c.id === connectionId)?.database}
-                </span>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* 未选择连接时的提示 */}
+      {!selectedConnectionId && (
+        <Card>
+          <CardContent className="pt-6 text-center text-gray-500">
+            <p>请在导航栏的数据库切换器中选择一个数据库连接</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* 只有选择了连接才显示表列表 */}
-      {connectionId && (
+      {selectedConnectionId && selectedConnection && (
         <>
           {/* 表列表 */}
       <Card>

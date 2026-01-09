@@ -1,63 +1,34 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useDbContext } from '@/lib/db-context';
 import { ConnectionManager } from './ConnectionManager';
 import { TableBrowser } from './TableBrowser';
 import { SQLExecutor } from './SQLExecutor';
 import { HistoryViewer } from './HistoryViewer';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Database, Terminal, History, Settings } from 'lucide-react';
-import type { DbConnection } from '@db/schema';
 
 export function DatabaseDashboard() {
-  const [connections, setConnections] = useState<DbConnection[]>([]);
-  const [selectedConnection, setSelectedConnection] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { connections, selectedConnectionId, selectConnection, loading, error, refreshConnections } = useDbContext();
+  const [localLoading, setLocalLoading] = useState(false);
 
-  useEffect(() => {
-    loadConnections();
-  }, []);
-
-  const loadConnections = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const res = await fetch('/api/db/connections');
-      if (!res.ok) {
-        throw new Error('加载连接失败');
-      }
-
-      const data = await res.json();
-      if (data.success) {
-        setConnections(data.data);
-        // 自动选择第一个连接
-        if (data.data.length > 0 && !selectedConnection) {
-          setSelectedConnection(data.data[0].id);
-        }
-      } else {
-        throw new Error(data.error || '加载连接失败');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '加载连接失败');
-    } finally {
-      setLoading(false);
-    }
+  const handleConnectionCreated = async () => {
+    setLocalLoading(true);
+    await refreshConnections();
+    setLocalLoading(false);
   };
 
-  const handleConnectionCreated = () => {
-    loadConnections();
-  };
-
-  const handleConnectionDeleted = () => {
-    loadConnections();
-    if (selectedConnection && !connections.find(c => c.id === selectedConnection)) {
-      setSelectedConnection(null);
+  const handleConnectionDeleted = async () => {
+    setLocalLoading(true);
+    await refreshConnections();
+    // 如果删除了当前选择的连接，清除选择
+    if (selectedConnectionId && !connections.find(c => c.id === selectedConnectionId)) {
+      selectConnection(null);
     }
+    setLocalLoading(false);
   };
 
   return (
@@ -74,11 +45,11 @@ export function DatabaseDashboard() {
             <Database className="w-4 h-4 mr-2" />
             连接管理
           </TabsTrigger>
-          <TabsTrigger value="browser" disabled={!selectedConnection}>
+          <TabsTrigger value="browser" disabled={!selectedConnectionId}>
             <Settings className="w-4 h-4 mr-2" />
             数据浏览
           </TabsTrigger>
-          <TabsTrigger value="sql" disabled={!selectedConnection}>
+          <TabsTrigger value="sql" disabled={!selectedConnectionId}>
             <Terminal className="w-4 h-4 mr-2" />
             SQL查询
           </TabsTrigger>
@@ -99,27 +70,23 @@ export function DatabaseDashboard() {
             <CardContent>
               <ConnectionManager
                 connections={connections}
-                selectedConnection={selectedConnection}
-                onSelectConnection={setSelectedConnection}
+                selectedConnection={selectedConnectionId}
+                onSelectConnection={selectConnection}
                 onConnectionCreated={handleConnectionCreated}
                 onConnectionDeleted={handleConnectionDeleted}
-                loading={loading}
+                loading={loading || localLoading}
               />
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="browser" className="mt-6">
-          <TableBrowser
-            connectionId={selectedConnection}
-            connections={connections}
-            onConnectionChange={setSelectedConnection}
-          />
+          <TableBrowser />
         </TabsContent>
 
         <TabsContent value="sql" className="mt-6">
-          {selectedConnection && (
-            <SQLExecutor connectionId={selectedConnection} />
+          {selectedConnectionId && (
+            <SQLExecutor connectionId={selectedConnectionId} />
           )}
         </TabsContent>
 

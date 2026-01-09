@@ -19,7 +19,7 @@ export function useQuery() {
 
   const handleSubmit = useCallback(async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!queryState.query.trim() || queryState.isPending) return;
+    if (!queryState.query || !queryState.query.trim() || queryState.isPending) return;
 
     setError(null);
     setResult(null);
