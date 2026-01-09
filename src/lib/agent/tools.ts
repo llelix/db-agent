@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { db } from '../database/client';
-import { sql } from 'drizzle-orm';
+import { ConnectionManager } from '../database/connection-manager';
 
 // 输入验证 Schema
 const executeSQLSchema = z.object({
@@ -37,7 +36,7 @@ function validateSQLSecurity(sqlQuery: string): { safe: boolean; error?: string 
   }
 
   // 检查 UNION - 特殊处理，因为可能在子查询中
-  if (/\bUNION\b/i.test(sqlQuery)) {
+  if (/\\bUNION\\b/i.test(sqlQuery)) {
     return { safe: false, error: 'SQL 包含危险操作: UNION' };
   }
 
@@ -45,222 +44,233 @@ function validateSQLSecurity(sqlQuery: string): { safe: boolean; error?: string 
 }
 
 /**
- * 执行 SQL 查询工具
+ * 工具工厂 - 根据 connectionId 创建工具
  */
-export const executeSQLTool = {
-  name: 'execute_sql',
-  description: '执行 PostgreSQL SELECT 查询。必须确保 SQL 安全，只允许查询操作。',
-  input_schema: {
-    type: 'object',
-    properties: {
-      sql: {
-        type: 'string',
-        description: '要执行的 SQL 语句，必须是 SELECT 查询'
-      },
-      explanation: {
-        type: 'string',
-        description: '对这个查询的简短解释'
-      }
-    },
-    required: ['sql', 'explanation']
-  } as const,
-
-  execute: async (args: { sql: string; explanation: string }) => {
-    // 安全验证
-    const security = validateSQLSecurity(args.sql);
-    if (!security.safe) {
-      return {
-        success: false,
-        error: security.error,
-        explanation: args.explanation
-      };
-    }
-
-    try {
-      // 执行查询
-      const result = await db.execute(sql.raw(args.sql));
-
-      return {
-        success: true,
-        data: result,
-        explanation: args.explanation,
-        rowCount: result.length
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: String(error),
-        explanation: args.explanation
-      };
-    }
-  }
-};
-
-/**
- * 获取数据库表结构工具
- */
-export const getSchemaTool = {
-  name: 'get_database_schema',
-  description: '获取数据库表结构信息，帮助理解数据模型',
-  input_schema: {
-    type: 'object',
-    properties: {
-      tableName: {
-        type: 'string',
-        description: '特定表名，不指定则返回所有表'
-      }
-    },
-    required: []
-  } as const,
-
-  execute: async (args: { tableName?: string }) => {
-    const query = `
-      SELECT
-        table_name,
-        column_name,
-        data_type,
-        is_nullable,
-        column_default,
-        ordinal_position
-      FROM information_schema.columns
-      WHERE table_schema = 'public'
-      ${args.tableName ? `AND table_name = '${args.tableName}'` : ''}
-      ORDER BY table_name, ordinal_position;
-    `;
-
-    try {
-      const result = await db.execute(sql.raw(query));
-
-      // 按表分组
-      const tables: Record<string, any[]> = {};
-      result.forEach((row: any) => {
-        if (!tables[row.table_name]) {
-          tables[row.table_name] = [];
+export function createTools(connectionId: string) {
+  /**
+   * 执行 SQL 查询工具
+   */
+  const executeSQLTool = {
+    name: 'execute_sql',
+    description: '执行 PostgreSQL SELECT 查询。必须确保 SQL 安全，只允许查询操作。',
+    input_schema: {
+      type: 'object',
+      properties: {
+        sql: {
+          type: 'string',
+          description: '要执行的 SQL 语句，必须是 SELECT 查询'
+        },
+        explanation: {
+          type: 'string',
+          description: '对这个查询的简短解释'
         }
-        tables[row.table_name].push({
-          column: row.column_name,
-          type: row.data_type,
-          nullable: row.is_nullable === 'YES',
-          default: row.column_default,
-        });
-      });
+      },
+      required: ['sql', 'explanation']
+    } as const,
 
-      return {
-        schema: tables,
-        description: args.tableName ? `表 ${args.tableName} 的结构` : '所有表的结构',
-        tableCount: Object.keys(tables).length
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: String(error)
-      };
-    }
-  }
-};
-
-/**
- * 数据分析工具
- */
-export const analyzeDataTool = {
-  name: 'analyze_data',
-  description: '分析查询结果并生成统计信息',
-  input_schema: {
-    type: 'object',
-    properties: {
-      data: {
-        type: 'array',
-        description: '要分析的数据数组'
-      },
-      operation: {
-        type: 'string',
-        enum: ['count', 'sum', 'avg', 'max', 'min', 'distinct', 'sort'],
-        description: '要执行的分析操作'
-      },
-      column: {
-        type: 'string',
-        description: '要分析的列名'
-      },
-      limit: {
-        type: 'number',
-        description: '结果限制数量 (用于 sort)'
+    execute: async (args: { sql: string; explanation: string }) => {
+      // 安全验证
+      const security = validateSQLSecurity(args.sql);
+      if (!security.safe) {
+        return {
+          success: false,
+          error: security.error,
+          explanation: args.explanation
+        };
       }
-    },
-    required: ['data', 'operation']
-  } as const,
 
-  execute: async (args: {
-    data: any[];
-    operation: string;
-    column?: string;
-    limit?: number
-  }) => {
-    const { data, operation, column, limit } = args;
+      try {
+        // 使用 ConnectionManager 执行查询
+        const result = await ConnectionManager.executeQuery(connectionId, args.sql);
 
-    if (!Array.isArray(data) || data.length === 0) {
-      return { error: '数据为空或格式错误' };
+        return {
+          success: true,
+          data: result,
+          explanation: args.explanation,
+          rowCount: result.length
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: String(error),
+          explanation: args.explanation
+        };
+      }
     }
+  };
 
-    const result: any = { rowCount: data.length };
+  /**
+   * 获取数据库表结构工具
+   */
+  const getSchemaTool = {
+    name: 'get_database_schema',
+    description: '获取数据库表结构信息，包括表名、表注释、列名、列注释和数据类型，帮助理解数据模型',
+    input_schema: {
+      type: 'object',
+      properties: {
+        tableName: {
+          type: 'string',
+          description: '特定表名，不指定则返回所有表'
+        }
+      },
+      required: []
+    } as const,
 
-    try {
-      switch (operation) {
-        case 'count':
-          result.count = data.length;
-          break;
+    execute: async (args: { tableName?: string }) => {
+      // 获取表结构和列注释
+      const query = `
+        SELECT
+          c.table_name,
+          c.column_name,
+          c.data_type,
+          c.ordinal_position,
+          pgd.description as column_comment,
+          pt.description as table_comment
+        FROM information_schema.columns c
+        LEFT JOIN pg_catalog.pg_statio_all_tables st ON (st.schemaname = 'public' AND st.relname = c.table_name)
+        LEFT JOIN pg_catalog.pg_description pgd ON (pgd.objoid = st.relid AND pgd.objsubid = c.ordinal_position)
+        LEFT JOIN pg_catalog.pg_description pt ON (pt.objoid = st.relid AND pt.objsubid = 0)
+        WHERE c.table_schema = 'public'
+        ${args.tableName ? `AND c.table_name = '${args.tableName}'` : ''}
+        ORDER BY c.table_name, c.ordinal_position;
+      `;
 
-        case 'sum':
-          if (!column) throw new Error('需要指定 column');
-          result.sum = data.reduce((acc, row) => acc + (Number(row[column]) || 0), 0);
-          break;
+      try {
+        const result = await ConnectionManager.executeQuery(connectionId, query);
 
-        case 'avg':
-          if (!column) throw new Error('需要指定 column');
-          const numbers = data.map(row => Number(row[column])).filter(n => !isNaN(n));
-          result.avg = numbers.length > 0 ? numbers.reduce((a, b) => a + b, 0) / numbers.length : 0;
-          break;
-
-        case 'max':
-          if (!column) throw new Error('需要指定 column');
-          result.max = Math.max(...data.map(row => Number(row[column])));
-          break;
-
-        case 'min':
-          if (!column) throw new Error('需要指定 column');
-          result.min = Math.min(...data.map(row => Number(row[column])));
-          break;
-
-        case 'distinct':
-          if (!column) throw new Error('需要指定 column');
-          result.distinct = [...new Set(data.map(row => row[column]))];
-          break;
-
-        case 'sort':
-          if (!column) throw new Error('需要指定 column');
-          const sorted = [...data].sort((a, b) => {
-            const aVal = Number(a[column]);
-            const bVal = Number(b[column]);
-            return bVal - aVal; // 降序
+        // 按表分组
+        const tables: Record<string, any> = {};
+        result.forEach((row: any) => {
+          if (!tables[row.table_name]) {
+            tables[row.table_name] = {
+              table_name: row.table_name,
+              table_comment: row.table_comment || '',
+              columns: []
+            };
+          }
+          tables[row.table_name].columns.push({
+            column_name: row.column_name,
+            data_type: row.data_type,
+            column_comment: row.column_comment || ''
           });
-          result.sorted = limit ? sorted.slice(0, limit) : sorted;
-          break;
+        });
 
-        default:
-          throw new Error(`不支持的操作: ${operation}`);
+        // 转换为数组格式
+        const schema = Object.values(tables);
+
+        return {
+          schema: schema,
+          description: args.tableName ? `表 ${args.tableName} 的结构（包含表注释和列注释）` : '所有表的结构（包含表注释和列注释）',
+          tableCount: schema.length
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: String(error)
+        };
+      }
+    }
+  };
+
+  /**
+   * 数据分析工具
+   */
+  const analyzeDataTool = {
+    name: 'analyze_data',
+    description: '分析查询结果并生成统计信息',
+    input_schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          description: '要分析的数据数组'
+        },
+        operation: {
+          type: 'string',
+          enum: ['count', 'sum', 'avg', 'max', 'min', 'distinct', 'sort'],
+          description: '要执行的分析操作'
+        },
+        column: {
+          type: 'string',
+          description: '要分析的列名'
+        },
+        limit: {
+          type: 'number',
+          description: '结果限制数量 (用于 sort)'
+        }
+      },
+      required: ['data', 'operation']
+    } as const,
+
+    execute: async (args: {
+      data: any[];
+      operation: string;
+      column?: string;
+      limit?: number
+    }) => {
+      const { data, operation, column, limit } = args;
+
+      if (!Array.isArray(data) || data.length === 0) {
+        return { error: '数据为空或格式错误' };
       }
 
-      return result;
-    } catch (error) {
-      return { error: String(error) };
+      const result: any = { rowCount: data.length };
+
+      try {
+        switch (operation) {
+          case 'count':
+            result.count = data.length;
+            break;
+
+          case 'sum':
+            if (!column) throw new Error('需要指定 column');
+            result.sum = data.reduce((acc, row) => acc + (Number(row[column]) || 0), 0);
+            break;
+
+          case 'avg':
+            if (!column) throw new Error('需要指定 column');
+            const numbers = data.map(row => Number(row[column])).filter(n => !isNaN(n));
+            result.avg = numbers.length > 0 ? numbers.reduce((a, b) => a + b, 0) / numbers.length : 0;
+            break;
+
+          case 'max':
+            if (!column) throw new Error('需要指定 column');
+            result.max = Math.max(...data.map(row => Number(row[column])));
+            break;
+
+          case 'min':
+            if (!column) throw new Error('需要指定 column');
+            result.min = Math.min(...data.map(row => Number(row[column])));
+            break;
+
+          case 'distinct':
+            if (!column) throw new Error('需要指定 column');
+            result.distinct = [...new Set(data.map(row => row[column]))];
+            break;
+
+          case 'sort':
+            if (!column) throw new Error('需要指定 column');
+            const sorted = [...data].sort((a, b) => {
+              const aVal = Number(a[column]);
+              const bVal = Number(b[column]);
+              return bVal - aVal; // 降序
+            });
+            result.sorted = limit ? sorted.slice(0, limit) : sorted;
+            break;
+
+          default:
+            throw new Error(`不支持的操作: ${operation}`);
+        }
+
+        return result;
+      } catch (error) {
+        return { error: String(error) };
+      }
     }
-  }
-};
+  };
 
-// 导出所有工具
-export const tools = [executeSQLTool, getSchemaTool, analyzeDataTool];
-
-// 工具类型定义
-export type Tool = (typeof tools)[number];
+  return [executeSQLTool, getSchemaTool, analyzeDataTool];
+}
 
 // 工具执行结果类型
 export interface ToolResult {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useOptimistic, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useQuery } from '@/lib/hooks/useQuery';
 import { Button } from './ui/button';
 import { QueryResult } from './QueryResult';
@@ -8,14 +8,6 @@ import { ReActFlow } from './ReActFlow';
 import { QueryHistory } from './QueryHistory';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-
-interface QueryResultData {
-  result: string;
-  steps: any[];
-  sql?: string;
-  data?: any[];
-  usage?: { input: number; output: number };
-}
 
 export function ChatInterface() {
   const { data: session, status } = useSession();
@@ -28,19 +20,12 @@ export function ChatInterface() {
     isPending,
     activeTab,
     setQuery,
-    handleSubmit,
     handleSubmitStream,
     handleQuerySelect,
     setActiveTab,
     streamStatus,
     streamSteps,
   } = useQuery();
-
-  // useOptimistic for instant UI updates - 必须在所有条件判断之前调用
-  const [optimisticResult, addOptimisticResult] = useOptimistic(
-    result,
-    (state, newResult: QueryResultData) => newResult
-  );
 
   // 使用 useEffect 处理重定向，避免在渲染过程中调用 router.push
   useEffect(() => {
@@ -66,30 +51,10 @@ export function ChatInterface() {
     return null;
   }
 
-  // Wrap handleSubmit with optimistic update (非流式)
+  // 流式提交处理
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query || !query.trim() || isPending) return;
-
-    // 乐观更新 - 立即显示处理状态
-    addOptimisticResult({
-      result: '✨ 正在处理您的查询，AI 智能体正在思考...',
-      steps: [],
-    });
-
-    await handleSubmit(e);
-  };
-
-  // 流式提交处理
-  const handleFormSubmitStream = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!query || !query.trim() || isPending) return;
-
-    // 乐观更新 - 立即显示处理状态
-    addOptimisticResult({
-      result: '✨ 正在处理您的查询，AI 智能体正在思考...',
-      steps: [],
-    });
 
     await handleSubmitStream(e);
   };
@@ -205,22 +170,6 @@ export function ChatInterface() {
                 </Button>
 
                 <Button
-                  type="submit"
-                  onClick={handleFormSubmitStream}
-                  disabled={!query || !query.trim() || isPending}
-                  variant="secondary"
-                  size="lg"
-                  className="gap-2 min-w-[140px]"
-                  title="流式执行 - 实时显示查询进度"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10h14" />
-                  </svg>
-                  流式查询
-                </Button>
-
-                <Button
                   variant="ghost"
                   size="lg"
                   onClick={() => setQuery('')}
@@ -293,17 +242,17 @@ export function ChatInterface() {
               )}
 
               {/* Result Display */}
-              {(optimisticResult || result) && (
+              {result && (
                 <div className="space-y-6 animate-fade-in">
                   <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
                     <QueryResult
-                      result={result || optimisticResult}
+                      result={result}
                       loading={isPending}
                     />
                   </div>
 
                   {/* ReAct Flow Visualization */}
-                  {result?.steps && result.steps.length > 0 && (
+                  {result.steps && result.steps.length > 0 && (
                     <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
                       <ReActFlow steps={result.steps} isStreaming={isPending} />
                     </div>

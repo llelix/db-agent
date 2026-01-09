@@ -1,14 +1,15 @@
 import 'dotenv/config';
 import { Anthropic } from '@anthropic-ai/sdk';
-import { executeSQLTool, getSchemaTool, analyzeDataTool, tools } from './tools';
+import { createTools } from './tools';
 import { AgentResult, AgentConfig, ReActStep } from './types';
 import { CLAUDE_MODEL, DEFAULT_AGENT_CONFIG } from './claude-client';
 
 export class DatabaseAgent {
   private anthropic: Anthropic;
   private config: AgentConfig;
+  private connectionId?: string;
 
-  constructor(config: AgentConfig = {}) {
+  constructor(config: AgentConfig & { connectionId?: string } = {}) {
     this.anthropic = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY!,
     });
@@ -19,6 +20,8 @@ export class DatabaseAgent {
       temperature: config.temperature || DEFAULT_AGENT_CONFIG.temperature,
       systemPrompt: config.systemPrompt || this.getDefaultSystemPrompt(),
     };
+
+    this.connectionId = config.connectionId;
   }
 
   /**
@@ -57,142 +60,6 @@ export class DatabaseAgent {
   }
 
   /**
-   * 执行查询主方法
-   */
-  async executeQuery(naturalLanguage: string): Promise<AgentResult> {
-    const messages: any[] = [
-      {
-        role: 'user',
-        content: naturalLanguage
-      }
-    ];
-
-    const steps: ReActStep[] = [];
-    let finalResult = '';
-    let sql = '';
-    let data: any[] = [];
-    let totalInputTokens = 0;
-    let totalOutputTokens = 0;
-
-    // ReAct 循环
-    for (let step = 0; step < this.config.maxSteps!; step++) {
-      const response = await this.anthropic.messages.create({
-        model: this.config.model!,
-        messages: messages,
-        system: this.config.systemPrompt!,
-        tools: tools,
-        max_tokens: 1000,
-        temperature: this.config.temperature,
-      });
-
-      totalInputTokens += response.usage.input_tokens;
-      totalOutputTokens += response.usage.output_tokens;
-
-      // 检查是否有内容
-      if (!response.content || response.content.length === 0) {
-        finalResult = 'AI 没有返回任何内容';
-        break;
-      }
-
-      const content = response.content[0];
-
-      // 处理文本回复
-      if (content.type === 'text') {
-        finalResult = content.text;
-
-        // 检查是否需要继续
-        if (!this.shouldContinue(content.text)) {
-          break;
-        }
-
-        // 记录思考步骤
-        steps.push({
-          thought: content.text,
-        });
-
-        messages.push({
-          role: 'assistant',
-          content: content.text,
-        });
-      }
-
-      // 处理工具调用
-      if (content.type === 'tool_use') {
-        const toolName = content.name;
-        const toolArgs = content.input as any;
-
-        const step: ReActStep = {
-          thought: `准备调用工具: ${toolName}`,
-          action: JSON.stringify(toolArgs, null, 2),
-        };
-
-        try {
-          let observation: any;
-
-          // 执行对应工具
-          if (toolName === 'execute_sql') {
-            const result = await executeSQLTool.execute(toolArgs);
-            observation = result;
-
-            if (result.success && result.data) {
-              sql = toolArgs.sql;
-              data = result.data;
-            }
-          } else if (toolName === 'get_database_schema') {
-            observation = await getSchemaTool.execute(toolArgs);
-          } else if (toolName === 'analyze_data') {
-            observation = await analyzeDataTool.execute(toolArgs);
-          } else {
-            throw new Error(`未知工具: ${toolName}`);
-          }
-
-          step.observation = JSON.stringify(observation, null, 2);
-          steps.push(step);
-
-          // 将工具结果添加到消息历史
-          messages.push({
-            role: 'user',
-            content: [
-              {
-                type: 'tool_result',
-                tool_use_id: content.id,
-                content: JSON.stringify(observation),
-              },
-            ],
-          });
-
-        } catch (error) {
-          step.observation = `Error: ${error}`;
-          steps.push(step);
-
-          messages.push({
-            role: 'user',
-            content: [
-              {
-                type: 'tool_result',
-                tool_use_id: content.id,
-                content: `Error: ${error}`,
-                is_error: true,
-              },
-            ],
-          });
-        }
-      }
-    }
-
-    return {
-      result: finalResult,
-      steps,
-      sql,
-      data,
-      usage: {
-        input: totalInputTokens,
-        output: totalOutputTokens,
-      },
-    };
-  }
-
-  /**
    * 流式执行查询主方法
    * @param naturalLanguage 自然语言查询
    * @param onStepUpdate 步骤更新回调函数，接收完整的数据对象
@@ -201,6 +68,14 @@ export class DatabaseAgent {
     naturalLanguage: string,
     onStepUpdate?: (step: number, data: any) => void
   ): Promise<AgentResult> {
+    // 检查是否有连接ID
+    if (!this.connectionId) {
+      throw new Error('未指定数据库连接');
+    }
+
+    // 根据 connectionId 创建工具
+    const tools = createTools(this.connectionId);
+
     const messages: any[] = [
       {
         role: 'user',
@@ -290,21 +165,18 @@ export class DatabaseAgent {
         try {
           let observation: any;
 
-          // 执行对应工具
-          if (toolName === 'execute_sql') {
-            const result = await executeSQLTool.execute(toolArgs);
-            observation = result;
-
-            if (result.success && result.data) {
-              sql = toolArgs.sql;
-              data = result.data;
-            }
-          } else if (toolName === 'get_database_schema') {
-            observation = await getSchemaTool.execute(toolArgs);
-          } else if (toolName === 'analyze_data') {
-            observation = await analyzeDataTool.execute(toolArgs);
-          } else {
+          // 在工具数组中查找对应的工具并执行
+          const tool = tools.find(t => t.name === toolName);
+          if (!tool) {
             throw new Error(`未知工具: ${toolName}`);
+          }
+
+          observation = await tool.execute(toolArgs);
+
+          // 如果是 execute_sql 且成功，保存 SQL 和数据
+          if (toolName === 'execute_sql' && observation.success && observation.data) {
+            sql = toolArgs.sql;
+            data = observation.data;
           }
 
           stepInfo.observation = JSON.stringify(observation, null, 2);
@@ -384,19 +256,5 @@ export class DatabaseAgent {
 
     // 如果文本较短，可能需要继续
     return text.length < 100;
-  }
-
-  /**
-   * 批量执行查询
-   */
-  async executeBatch(queries: string[]): Promise<AgentResult[]> {
-    const results: AgentResult[] = [];
-
-    for (const query of queries) {
-      const result = await this.executeQuery(query);
-      results.push(result);
-    }
-
-    return results;
   }
 }

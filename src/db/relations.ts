@@ -7,9 +7,6 @@ export const usersRelations = relations(users, ({ many }) => ({
 }));
 
 
-
-
-
 // 查询历史关系
 export const queryHistoryRelations = relations(queryHistory, ({ one }) => ({
   user: one(users, {

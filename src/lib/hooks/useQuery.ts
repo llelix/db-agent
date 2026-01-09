@@ -1,8 +1,8 @@
 'use client';
 
 import { useAppStore } from '../store';
-import { executeQueryAction } from '../actions/query-action';
 import { useCallback, useTransition, useState } from 'react';
+import { useDbContext } from '../db-context';
 
 export function useQuery() {
   const {
@@ -15,50 +15,23 @@ export function useQuery() {
     reset,
   } = useAppStore();
 
+  const { selectedConnectionId } = useDbContext();
   const [isTransition, startTransition] = useTransition();
 
   // 流式处理状态
   const [streamStatus, setStreamStatus] = useState<string>('');
   const [streamSteps, setStreamSteps] = useState<any[]>([]);
 
-  // 非流式提交（保持原有功能）
-  const handleSubmit = useCallback(async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!queryState.query || !queryState.query.trim() || queryState.isPending) return;
-
-    setError(null);
-    setResult(null);
-    setIsPending(true);
-    setStreamStatus('');
-    setStreamSteps([]);
-
-    const formData = new FormData();
-    formData.append('query', queryState.query);
-
-    startTransition(async () => {
-      try {
-        const response = await executeQueryAction(formData);
-
-        if (response.error) {
-          setError(response.error);
-          setResult(null);
-        } else if (response.data) {
-          setResult(response.data);
-          setQuery(''); // 清空输入框
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : '查询执行失败');
-        setResult(null);
-      } finally {
-        setIsPending(false);
-      }
-    });
-  }, [queryState.query, queryState.isPending, setError, setResult, setIsPending, setQuery]);
-
-  // 流式提交（新功能）
+  // 流式提交
   const handleSubmitStream = useCallback(async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!queryState.query || !queryState.query.trim() || queryState.isPending) return;
+
+    // 检查是否有选中的数据库连接
+    if (!selectedConnectionId) {
+      setError('请先选择一个数据库连接');
+      return;
+    }
 
     setError(null);
     setResult(null);
@@ -72,7 +45,10 @@ export function useQuery() {
         const response = await fetch('/api/query/stream', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: queryState.query }),
+          body: JSON.stringify({
+            query: queryState.query,
+            connectionId: selectedConnectionId
+          }),
         });
 
         if (!response.ok) {
@@ -186,7 +162,6 @@ export function useQuery() {
 
     // Actions
     setQuery,
-    handleSubmit,
     handleSubmitStream,
     handleQuerySelect,
     clearQuery,

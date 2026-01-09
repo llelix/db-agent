@@ -5,79 +5,7 @@ import { db } from '@/lib/database/client';
 import { queryHistory } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { sql } from 'drizzle-orm';
-
-export interface QueryActionResult {
-  data?: {
-    result: string;
-    steps: any[];
-    sql?: string;
-    data?: any[];
-    usage?: { input: number; output: number };
-  };
-  error?: string;
-}
-
-/**
- * 执行查询并保存历史记录（非流式版本）
- */
-export async function executeQueryAction(
-  formData: FormData
-): Promise<QueryActionResult> {
-  // 获取用户会话
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return { error: '未登录或会话已过期' };
-  }
-
-  // 获取查询内容
-  const query = formData.get('query') as string;
-
-  if (!query || query.trim().length === 0) {
-    return { error: '查询内容不能为空' };
-  }
-
-  if (query.trim().length > 500) {
-    return { error: '查询内容过长 (最大 500 字符)' };
-  }
-
-  try {
-    // 创建智能体实例
-    const agent = new DatabaseAgent();
-    const startTime = Date.now();
-
-    // 执行查询
-    const result = await agent.executeQuery(query);
-
-    const executionTime = Date.now() - startTime;
-
-    // 保存到历史记录
-    await db.insert(queryHistory).values({
-      userId: session.user.id,
-      naturalLanguageQuery: query,
-      generatedSql: result.sql || null,
-      result: result.data || null,
-      reactTrace: result.steps,
-      executionTimeMs: executionTime,
-      status: result.sql ? 'completed' : 'no_sql',
-    });
-
-    return { data: result };
-
-  } catch (error) {
-    console.error('Query execution error:', error);
-
-    // 保存错误记录
-    await db.insert(queryHistory).values({
-      userId: session.user.id,
-      naturalLanguageQuery: query,
-      status: 'error',
-      reactTrace: [{ thought: String(error) }],
-    });
-
-    return { error: String(error) };
-  }
-}
+import { ConnectionManager } from '@/lib/database/connection-manager';
 
 /**
  * 流式执行查询
@@ -88,6 +16,7 @@ export async function executeQueryStream(
 ): Promise<ReadableStream> {
   const session = await auth();
   const query = formData.get('query') as string;
+  const connectionId = formData.get('connectionId') as string;
 
   return new ReadableStream({
     async start(controller: ReadableStreamDefaultController) {
@@ -117,13 +46,32 @@ export async function executeQueryStream(
         return;
       }
 
+      // 连接验证
+      if (!connectionId) {
+        controller.enqueue(
+          JSON.stringify({ type: 'error', data: '未选择数据库连接' }) + '\n'
+        );
+        controller.close();
+        return;
+      }
+
       try {
+        // 获取连接配置
+        const connection = await ConnectionManager.getConnection(connectionId);
+        if (!connection) {
+          controller.enqueue(
+            JSON.stringify({ type: 'error', data: '数据库连接不存在或无权限' }) + '\n'
+          );
+          controller.close();
+          return;
+        }
+
         // 发送开始状态
         controller.enqueue(
           JSON.stringify({ type: 'status', message: '开始分析查询...' }) + '\n'
         );
 
-        const agent = new DatabaseAgent();
+        const agent = new DatabaseAgent({ connectionId });
         const startTime = Date.now();
 
         // 执行流式查询 - 直接传入 controller

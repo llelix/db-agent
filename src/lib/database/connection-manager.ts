@@ -85,6 +85,21 @@ export class ConnectionManager {
   }
 
   /**
+   * 获取连接配置
+   */
+  static async getConnection(connectionId: string): Promise<DbConnection | null> {
+    try {
+      const connection = await db.query.dbConnections.findFirst({
+        where: eq(dbConnections.id, connectionId),
+      });
+      return connection || null;
+    } catch (error) {
+      console.error('获取连接失败:', error);
+      return null;
+    }
+  }
+
+  /**
    * 测试连接
    */
   static async testConnection(config: Omit<DbConnection, 'id' | 'createdAt' | 'updatedAt'>): Promise<boolean> {

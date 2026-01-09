@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   try {
     // 解析请求体
     const body = await request.json();
-    const { query } = body;
+    const { query, connectionId } = body;
 
     // 验证请求
     if (!query || typeof query !== 'string') {
@@ -19,9 +19,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!connectionId || typeof connectionId !== 'string') {
+      return new Response(
+        JSON.stringify({ type: 'error', data: '无效的请求 - 缺少 connectionId 参数' }) + '\n',
+        { status: 400, headers: { 'Content-Type': 'application/x-ndjson' } }
+      );
+    }
+
     // 创建 FormData
     const formData = new FormData();
     formData.append('query', query);
+    formData.append('connectionId', connectionId);
 
     // 执行流式查询
     const stream = await executeQueryStream(formData);

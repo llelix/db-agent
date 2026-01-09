@@ -1,5 +1,5 @@
 export { DatabaseAgent } from './database-agent';
-export { executeSQLTool, getSchemaTool, analyzeDataTool, tools } from './tools';
+export { createTools } from './tools';
 export { anthropic, CLAUDE_MODEL, validateClaudeConfig } from './claude-client';
 export * from './types';
 

@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { UserMenu } from '@/components/user-menu';
 import { SessionProvider } from '@/components/session-provider';
 import { DbSwitcher } from '@/components/db-switcher';
+import { DbContextProvider } from '@/lib/db-context';
 import Link from 'next/link';
 import { Database, Terminal } from 'lucide-react';
 import './globals.css';
@@ -11,7 +12,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="zh-CN">
       <body>
         <SessionProvider>
-          <div className="min-h-screen bg-gray-50">
+          <DbContextProvider>
+            <div className="min-h-screen bg-gray-50">
             {/* 顶部导航栏 */}
             <header className="bg-white border-b">
               <div className="container mx-auto px-6">
@@ -60,6 +62,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               </div>
             </footer>
           </div>
+          </DbContextProvider>
         </SessionProvider>
       </body>
     </html>
