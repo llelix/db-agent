@@ -29,8 +29,11 @@ export function ChatInterface() {
     activeTab,
     setQuery,
     handleSubmit,
+    handleSubmitStream,
     handleQuerySelect,
     setActiveTab,
+    streamStatus,
+    streamSteps,
   } = useQuery();
 
   // useOptimistic for instant UI updates - 必须在所有条件判断之前调用
@@ -63,7 +66,7 @@ export function ChatInterface() {
     return null;
   }
 
-  // Wrap handleSubmit with optimistic update
+  // Wrap handleSubmit with optimistic update (非流式)
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query || !query.trim() || isPending) return;
@@ -75,6 +78,20 @@ export function ChatInterface() {
     });
 
     await handleSubmit(e);
+  };
+
+  // 流式提交处理
+  const handleFormSubmitStream = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query || !query.trim() || isPending) return;
+
+    // 乐观更新 - 立即显示处理状态
+    addOptimisticResult({
+      result: '✨ 正在处理您的查询，AI 智能体正在思考...',
+      steps: [],
+    });
+
+    await handleSubmitStream(e);
   };
 
   return (
@@ -163,7 +180,7 @@ export function ChatInterface() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 <Button
                   type="submit"
                   onClick={handleFormSubmit}
@@ -188,7 +205,23 @@ export function ChatInterface() {
                 </Button>
 
                 <Button
+                  type="submit"
+                  onClick={handleFormSubmitStream}
+                  disabled={!query || !query.trim() || isPending}
                   variant="secondary"
+                  size="lg"
+                  className="gap-2 min-w-[140px]"
+                  title="流式执行 - 实时显示查询进度"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10h14" />
+                  </svg>
+                  流式查询
+                </Button>
+
+                <Button
+                  variant="ghost"
                   size="lg"
                   onClick={() => setQuery('')}
                   className="gap-2"
@@ -199,6 +232,48 @@ export function ChatInterface() {
                   重置
                 </Button>
               </div>
+
+              {/* 流式状态显示 */}
+              {isPending && streamStatus && (
+                <div className="animate-fade-in rounded-xl border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/20 p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 mt-0.5">
+                      <svg className="h-5 w-5 text-violet-500 animate-spin" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-violet-800 dark:text-violet-300">查询进行中</p>
+                      <p className="text-sm text-violet-700 dark:text-violet-400 mt-1">{streamStatus}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 流式步骤显示 */}
+              {isPending && streamSteps.length > 0 && (
+                <div className="animate-fade-in space-y-2">
+                  {streamSteps.map((step, idx) => (
+                    <div key={idx} className="glass rounded-lg p-3 border border-slate-200 dark:border-slate-700">
+                      {step.thought && (
+                        <div className="text-xs text-slate-600 dark:text-slate-300 mb-1">
+                          <span className="font-semibold text-violet-600 dark:text-violet-400">💡 思考:</span> {step.thought}
+                        </div>
+                      )}
+                      {step.action && (
+                        <div className="text-xs font-mono text-slate-500 dark:text-slate-400 bg-slate-900/50 dark:bg-slate-800/50 p-2 rounded mt-1 overflow-x-auto">
+                          {step.action}
+                        </div>
+                      )}
+                      {step.observation && (
+                        <div className="text-xs text-slate-600 dark:text-slate-300 mt-1">
+                          <span className="font-semibold text-emerald-600 dark:text-emerald-400">📊 观察:</span> {JSON.stringify(JSON.parse(step.observation), null, 2)}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Error Message */}
               {error && (

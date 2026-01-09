@@ -193,6 +193,183 @@ export class DatabaseAgent {
   }
 
   /**
+   * 流式执行查询主方法
+   * @param naturalLanguage 自然语言查询
+   * @param onStepUpdate 步骤更新回调函数，接收完整的数据对象
+   */
+  async executeQueryWithStream(
+    naturalLanguage: string,
+    onStepUpdate?: (step: number, data: any) => void
+  ): Promise<AgentResult> {
+    const messages: any[] = [
+      {
+        role: 'user',
+        content: naturalLanguage
+      }
+    ];
+
+    const steps: ReActStep[] = [];
+    let finalResult = '';
+    let sql = '';
+    let data: any[] = [];
+    let totalInputTokens = 0;
+    let totalOutputTokens = 0;
+
+    // ReAct 循环
+    for (let step = 0; step < this.config.maxSteps!; step++) {
+      // 发送思考中状态
+      if (onStepUpdate) {
+        onStepUpdate(step, { type: 'thinking', message: `正在思考第 ${step + 1} 步...` });
+      }
+
+      const response = await this.anthropic.messages.create({
+        model: this.config.model!,
+        messages: messages,
+        system: this.config.systemPrompt!,
+        tools: tools,
+        max_tokens: 1000,
+        temperature: this.config.temperature,
+      });
+
+      totalInputTokens += response.usage.input_tokens;
+      totalOutputTokens += response.usage.output_tokens;
+
+      // 检查是否有内容
+      if (!response.content || response.content.length === 0) {
+        finalResult = 'AI 没有返回任何内容';
+        break;
+      }
+
+      const content = response.content[0];
+
+      // 处理文本回复
+      if (content.type === 'text') {
+        finalResult = content.text;
+
+        // 发送思考内容
+        if (onStepUpdate) {
+          onStepUpdate(step, { type: 'thought', message: content.text });
+        }
+
+        // 检查是否需要继续
+        if (!this.shouldContinue(content.text)) {
+          break;
+        }
+
+        // 记录思考步骤
+        steps.push({
+          thought: content.text,
+        });
+
+        messages.push({
+          role: 'assistant',
+          content: content.text,
+        });
+      }
+
+      // 处理工具调用
+      if (content.type === 'tool_use') {
+        const toolName = content.name;
+        const toolArgs = content.input as any;
+
+        const stepInfo: ReActStep = {
+          thought: `准备调用工具: ${toolName}`,
+          action: JSON.stringify(toolArgs, null, 2),
+        };
+
+        // 发送工具调用信息
+        if (onStepUpdate) {
+          onStepUpdate(step, {
+            type: 'action',
+            message: `准备调用工具: ${toolName}`,
+            tool: toolName,
+            args: toolArgs
+          });
+        }
+
+        try {
+          let observation: any;
+
+          // 执行对应工具
+          if (toolName === 'execute_sql') {
+            const result = await executeSQLTool.execute(toolArgs);
+            observation = result;
+
+            if (result.success && result.data) {
+              sql = toolArgs.sql;
+              data = result.data;
+            }
+          } else if (toolName === 'get_database_schema') {
+            observation = await getSchemaTool.execute(toolArgs);
+          } else if (toolName === 'analyze_data') {
+            observation = await analyzeDataTool.execute(toolArgs);
+          } else {
+            throw new Error(`未知工具: ${toolName}`);
+          }
+
+          stepInfo.observation = JSON.stringify(observation, null, 2);
+          steps.push(stepInfo);
+
+          // 发送观察结果
+          if (onStepUpdate) {
+            onStepUpdate(step, {
+              type: 'observation',
+              data: observation
+            });
+          }
+
+          // 将工具结果添加到消息历史
+          messages.push({
+            role: 'user',
+            content: [
+              {
+                type: 'tool_result',
+                tool_use_id: content.id,
+                content: JSON.stringify(observation),
+              },
+            ],
+          });
+
+        } catch (error) {
+          stepInfo.observation = `Error: ${error}`;
+          steps.push(stepInfo);
+
+          // 发送错误信息
+          if (onStepUpdate) {
+            onStepUpdate(step, {
+              type: 'error',
+              data: String(error)
+            });
+          }
+
+          messages.push({
+            role: 'user',
+            content: [
+              {
+                type: 'tool_result',
+                tool_use_id: content.id,
+                content: `Error: ${error}`,
+                is_error: true,
+              },
+            ],
+          });
+        }
+      }
+    }
+
+    return {
+      result: finalResult,
+      steps,
+      sql,
+      data,
+      usage: {
+        input: totalInputTokens,
+        output: totalOutputTokens,
+      },
+    };
+  }
+
+  /**
    * 判断是否需要继续执行
    */
   private shouldContinue(text: string): boolean {

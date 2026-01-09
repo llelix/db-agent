@@ -4,7 +4,7 @@ import { DatabaseAgent } from '@/lib/agent/database-agent';
 import { db } from '@/lib/database/client';
 import { queryHistory } from '@/db/schema';
 import { auth } from '@/lib/auth';
-import { eq, and, desc, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 
 export interface QueryActionResult {
   data?: {
@@ -18,7 +18,7 @@ export interface QueryActionResult {
 }
 
 /**
- * 执行查询并保存历史记录
+ * 执行查询并保存历史记录（非流式版本）
  */
 export async function executeQueryAction(
   formData: FormData
@@ -77,6 +77,100 @@ export async function executeQueryAction(
 
     return { error: String(error) };
   }
+}
+
+/**
+ * 流式执行查询
+ * 返回一个 ReadableStream，可以实时发送进度更新
+ */
+export async function executeQueryStream(
+  formData: FormData
+): Promise<ReadableStream> {
+  const session = await auth();
+  const query = formData.get('query') as string;
+
+  return new ReadableStream({
+    async start(controller: ReadableStreamDefaultController) {
+      // 认证检查
+      if (!session?.user?.id) {
+        controller.enqueue(
+          JSON.stringify({ type: 'error', data: '未登录或会话已过期' }) + '\n'
+        );
+        controller.close();
+        return;
+      }
+
+      // 查询内容验证
+      if (!query || query.trim().length === 0) {
+        controller.enqueue(
+          JSON.stringify({ type: 'error', data: '查询内容不能为空' }) + '\n'
+        );
+        controller.close();
+        return;
+      }
+
+      if (query.trim().length > 500) {
+        controller.enqueue(
+          JSON.stringify({ type: 'error', data: '查询内容过长 (最大 500 字符)' }) + '\n'
+        );
+        controller.close();
+        return;
+      }
+
+      try {
+        // 发送开始状态
+        controller.enqueue(
+          JSON.stringify({ type: 'status', message: '开始分析查询...' }) + '\n'
+        );
+
+        const agent = new DatabaseAgent();
+        const startTime = Date.now();
+
+        // 执行流式查询 - 直接传入 controller
+        const result = await agent.executeQueryWithStream(query, (step, data) => {
+          // data 已经包含 type 字段，直接发送
+          controller.enqueue(
+            JSON.stringify(data) + '\n'
+          );
+        });
+
+        const executionTime = Date.now() - startTime;
+
+        // 保存到历史记录
+        await db.insert(queryHistory).values({
+          userId: session.user.id,
+          naturalLanguageQuery: query,
+          generatedSql: result.sql || null,
+          result: result.data || null,
+          reactTrace: result.steps,
+          executionTimeMs: executionTime,
+          status: result.sql ? 'completed' : 'no_sql',
+        });
+
+        // 发送最终结果
+        controller.enqueue(
+          JSON.stringify({ type: 'complete', data: result }) + '\n'
+        );
+        controller.close();
+
+      } catch (error) {
+        console.error('Query execution error:', error);
+
+        // 保存错误记录
+        await db.insert(queryHistory).values({
+          userId: session.user.id,
+          naturalLanguageQuery: query,
+          status: 'error',
+          reactTrace: [{ thought: String(error) }],
+        });
+
+        controller.enqueue(
+          JSON.stringify({ type: 'error', data: String(error) }) + '\n'
+        );
+        controller.close();
+      }
+    },
+  });
 }
 
 /**
