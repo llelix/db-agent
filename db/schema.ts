@@ -8,6 +8,7 @@ import {
   text,
   jsonb,
   uniqueIndex,
+  boolean,
 } from 'drizzle-orm/pg-core';
 
 /**
@@ -94,18 +95,56 @@ export const sales = pgTable('sales', {
 });
 
 /**
+ * 数据库连接配置表
+ * 存储用户的数据库连接信息
+ */
+export const dbConnections = pgTable('db_connections', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  name: varchar('name', { length: 100 }).notNull(),
+  host: varchar('host', { length: 255 }).notNull(),
+  port: integer('port').default(5432),
+  database: varchar('database', { length: 100 }).notNull(),
+  username: varchar('username', { length: 100 }).notNull(),
+  password: varchar('password', { length: 255 }).notNull(),
+  ssl: boolean('ssl').default(false),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+/**
+ * 连接历史记录表
+ * 存储用户的连接操作历史
+ */
+export const connectionHistory = pgTable('connection_history', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  connectionId: uuid('connection_id').references(() => dbConnections.id, { onDelete: 'set null' }),
+  action: varchar('action', { length: 50 }),
+  details: jsonb('details'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+/**
  * 查询历史表
  * 存储用户的查询历史和执行结果
  */
 export const queryHistory = pgTable('query_history', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: uuid('user_id').references(() => users.id),
-  naturalLanguageQuery: text('natural_language_query').notNull(),
+  connectionId: uuid('connection_id').references(() => dbConnections.id),
+  naturalLanguageQuery: text('natural_language_query'),
   generatedSql: text('generated_sql'),
+  manualSql: text('manual_sql'),
+  queryType: varchar('query_type', { length: 20 }),
+  query: text('query'),
   result: jsonb('result'),
   reactTrace: jsonb('react_trace'),
   executionTimeMs: integer('execution_time_ms'),
+  executionTime: integer('execution_time'),
+  rowCount: integer('row_count'),
   status: varchar('status', { length: 50 }),
+  error: text('error'),
   createdAt: timestamp('created_at').defaultNow(),
 });
 
@@ -118,6 +157,12 @@ export type NewProduct = typeof products.$inferInsert;
 
 export type Sale = typeof sales.$inferSelect;
 export type NewSale = typeof sales.$inferInsert;
+
+export type DbConnection = typeof dbConnections.$inferSelect;
+export type NewDbConnection = typeof dbConnections.$inferInsert;
+
+export type ConnectionHistory = typeof connectionHistory.$inferSelect;
+export type NewConnectionHistory = typeof connectionHistory.$inferInsert;
 
 export type QueryHistory = typeof queryHistory.$inferSelect;
 export type NewQueryHistory = typeof queryHistory.$inferInsert;

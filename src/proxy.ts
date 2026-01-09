@@ -40,7 +40,7 @@ export const config = {
      */
     '/dashboard/:path*',
     '/api/query/:path*',
-    '/profile/:path*',
+    '/profile/:path*',  
     '/agent',
 
     /*
