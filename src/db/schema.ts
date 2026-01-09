@@ -3,7 +3,6 @@ import {
   uuid,
   varchar,
   timestamp,
-  decimal,
   integer,
   text,
   jsonb,
@@ -69,30 +68,6 @@ export const verificationTokens = pgTable('verification_tokens', {
   uniqueIndex('identifier_token_idx').on(table.identifier, table.token),
 ]);
 
-/**
- * 产品表
- * 存储产品信息
- */
-export const products = pgTable('products', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  name: varchar('name', { length: 255 }).notNull(),
-  price: decimal('price', { precision: 10, scale: 2 }).notNull(),
-  category: varchar('category', { length: 100 }),
-  createdAt: timestamp('created_at').defaultNow(),
-});
-
-/**
- * 销售表
- * 存储销售记录
- */
-export const sales = pgTable('sales', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  productId: uuid('product_id').references(() => products.id),
-  quantity: integer('quantity').notNull(),
-  saleDate: timestamp('sale_date').defaultNow(),
-  totalAmount: decimal('total_amount', { precision: 10, scale: 2 }).notNull(),
-  userId: uuid('user_id').references(() => users.id),
-});
 
 /**
  * 数据库连接配置表
@@ -151,12 +126,6 @@ export const queryHistory = pgTable('query_history', {
 // 类型导出
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
-
-export type Product = typeof products.$inferSelect;
-export type NewProduct = typeof products.$inferInsert;
-
-export type Sale = typeof sales.$inferSelect;
-export type NewSale = typeof sales.$inferInsert;
 
 export type DbConnection = typeof dbConnections.$inferSelect;
 export type NewDbConnection = typeof dbConnections.$inferInsert;

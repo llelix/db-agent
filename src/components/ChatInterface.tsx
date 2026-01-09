@@ -1,7 +1,7 @@
 'use client';
 
 import { useOptimistic, useEffect } from 'react';
-import { useQuery } from '../lib/hooks/useQuery';
+import { useQuery } from '@/lib/hooks/useQuery';
 import { Button } from './ui/button';
 import { QueryResult } from './QueryResult';
 import { ReActFlow } from './ReActFlow';

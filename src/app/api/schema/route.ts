@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSchemaTool } from '../../../../lib/agent/tools';
+import { getSchemaTool } from '@/lib/agent/tools';
 
 /**
  * GET /api/schema

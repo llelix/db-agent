@@ -13,14 +13,14 @@ import type { NextRequest } from 'next/server';
 export async function proxy(request: NextRequest) {
   const session = await auth();
 
-  // 如果用户未登录且尝试访问受保护路由，重定向到登录页
-  if (!session && request.nextUrl.pathname.startsWith('/dashboard')) {
+  // 如果用户未登录且尝试访问受保护路由（除登录页外的所有路由），重定向到登录页
+  if (!session && request.nextUrl.pathname !== '/login') {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // 如果用户已登录且尝试访问登录页，重定向到仪表板
+  // 如果用户已登录且尝试访问登录页，重定向到首页
   if (session && request.nextUrl.pathname === '/login') {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    return NextResponse.redirect(new URL('/', request.url));
   }
 
   return NextResponse.next();
@@ -34,18 +34,19 @@ export const config = {
   matcher: [
     /*
      * 匹配所有需要认证的路由
-     * - /dashboard 及其子路由
-     * - /api/query (我们的查询 API)
-     * - /profile 等
+     * - / (首页，需要认证)
+     * - /api/query (查询 API)
+     * - /agent (AI 查询页面)
+     * - /dashboard (兼容性路由)
      */
-    '/dashboard/:path*',
+    '/',
     '/api/query/:path*',
-    '/profile/:path*',  
     '/agent',
+    '/dashboard/:path*',
 
     /*
      * 排除静态资源和公共路由
-     * - /login, /signup, /api/auth/*
+     * - /login, /signup, /api/auth/*, /api/health
      */
     '/((?!api/auth|login|signup|_next/static|_next/image|favicon.ico|api/health).*)',
   ],

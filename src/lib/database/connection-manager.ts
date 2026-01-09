@@ -2,8 +2,8 @@ import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { sql, eq } from 'drizzle-orm';
-import { db } from '@/db';
-import { dbConnections, connectionHistory, type DbConnection } from '@db/schema';
+import { db } from './client';
+import { dbConnections, connectionHistory, type DbConnection } from '@/db/schema';
 import * as aesjs from 'aes-js';
 
 // 加密密钥 (从环境变量获取，否则使用默认密钥)

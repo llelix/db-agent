@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getQueryHistoryAction } from '../lib/actions/query-action';
+import { getQueryHistoryAction } from '@/lib/actions/query-action';
 import { Button } from './ui/button';
 
 interface QueryHistoryItem {

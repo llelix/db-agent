@@ -16,14 +16,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <div className="container mx-auto px-6">
                 <div className="flex items-center justify-between h-16">
                   <div className="flex items-center gap-8">
-                    <Link href="/dashboard" className="flex items-center gap-2 font-bold text-lg">
+                    <Link href="/" className="flex items-center gap-2 font-bold text-lg">
                       <Database className="h-6 w-6 text-blue-600" />
                       <span>数据库管理</span>
                     </Link>
 
                     <nav className="hidden md:flex items-center gap-6">
                       <Link
-                        href="/dashboard"
+                        href="/"
                         className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors flex items-center gap-2"
                       >
                         <Database className="h-4 w-4" />

@@ -1,8 +1,8 @@
 'use server';
 
-import { DatabaseAgent } from '../../../lib/agent/database-agent';
-import { db } from '../../../lib/database/client';
-import { queryHistory } from '../../../db/schema';
+import { DatabaseAgent } from '@/lib/agent/database-agent';
+import { db } from '@/lib/database/client';
+import { queryHistory } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { eq, and, desc, sql } from 'drizzle-orm';
 

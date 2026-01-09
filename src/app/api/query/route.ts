@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DatabaseAgent } from '../../../../lib/agent/database-agent';
+import { DatabaseAgent } from '@/lib/agent/database-agent';
 import { auth } from '@/lib/auth';
-import { db } from '../../../../lib/database/client';
-import { queryHistory } from '../../../../db/schema';
+import { db } from '@/lib/database/client';
+import { queryHistory } from '@/db/schema';
 import { sql, eq, and } from 'drizzle-orm';
 
 /**

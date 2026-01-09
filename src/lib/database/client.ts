@@ -2,8 +2,8 @@ import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { sql } from 'drizzle-orm';
-import * as schema from '@db/schema';
-import * as relations from '@db/relations';
+import * as schema from '@/db/schema';
+import * as relations from '@/db/relations';
 
 // 从环境变量获取连接字符串
 const connectionString = process.env.DATABASE_URL;
