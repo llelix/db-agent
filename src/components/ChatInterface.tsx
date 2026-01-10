@@ -2,10 +2,10 @@
 
 import { useEffect } from 'react';
 import { useQuery } from '@/lib/hooks/useQuery';
-import { Button } from '@radix-ui/themes';
 import { QueryResult } from './QueryResult';
 import { ReActFlow } from './ReActFlow';
 import { QueryHistory } from './QueryHistory';
+import { StreamingStatus, StreamingSteps } from './StreamingSteps';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
@@ -85,29 +85,33 @@ export function ChatInterface() {
           {/* Tab Navigation */}
           <div className="border-b border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg">
             <nav className="flex gap-1 p-2">
-              <Button
-                variant={activeTab === 'query' ? 'solid' : 'ghost'}
-                size="2"
+              <button
                 onClick={() => setActiveTab('query')}
-                className="gap-2"
+                className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg border transition-colors ${
+                  activeTab === 'query'
+                    ? 'bg-violet-600 text-white border-violet-600'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
+                }`}
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 智能查询
-              </Button>
+              </button>
 
-              <Button
-                variant={activeTab === 'history' ? 'solid' : 'ghost'}
-                size="2"
+              <button
                 onClick={() => setActiveTab('history')}
-                className="gap-2"
+                className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg border transition-colors ${
+                  activeTab === 'history'
+                    ? 'bg-violet-600 text-white border-violet-600'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
+                }`}
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 查询历史
-              </Button>
+              </button>
             </nav>
           </div>
 
@@ -146,13 +150,11 @@ export function ChatInterface() {
 
               {/* Action Buttons */}
               <div className="flex items-center gap-3 flex-wrap">
-                <Button
+                <button
                   type="submit"
                   onClick={handleFormSubmit}
                   disabled={!query || !query.trim() || isPending}
-                  variant="solid"
-                  size="3"
-                  className="gap-2 min-w-[140px] bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700 shadow-lg shadow-violet-500/30"
+                  className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700 text-white font-medium shadow-lg shadow-violet-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px] justify-center"
                 >
                   {isPending ? (
                     <>
@@ -167,61 +169,33 @@ export function ChatInterface() {
                       执行查询
                     </>
                   )}
-                </Button>
+                </button>
 
-                <Button
-                  variant="ghost"
-                  size="3"
+                <button
+                  type="button"
                   onClick={() => setQuery('')}
-                  className="gap-2"
+                  className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                   重置
-                </Button>
+                </button>
               </div>
 
               {/* 流式状态显示 */}
               {isPending && streamStatus && (
-                <div className="animate-fade-in rounded-xl border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/20 p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 mt-0.5">
-                      <svg className="h-5 w-5 text-violet-500 animate-spin" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-violet-800 dark:text-violet-300">查询进行中</p>
-                      <p className="text-sm text-violet-700 dark:text-violet-400 mt-1">{streamStatus}</p>
-                    </div>
-                  </div>
-                </div>
+                <StreamingStatus status={streamStatus} />
               )}
 
               {/* 流式步骤显示 */}
               {isPending && streamSteps.length > 0 && (
-                <div className="animate-fade-in space-y-2">
-                  {streamSteps.map((step, idx) => (
-                    <div key={idx} className="glass rounded-lg p-3 border border-slate-200 dark:border-slate-700">
-                      {step.thought && (
-                        <div className="text-xs text-slate-600 dark:text-slate-300 mb-1">
-                          <span className="font-semibold text-violet-600 dark:text-violet-400">💡 思考:</span> {step.thought}
-                        </div>
-                      )}
-                      {step.action && (
-                        <div className="text-xs font-mono text-slate-500 dark:text-slate-400 bg-slate-900/50 dark:bg-slate-800/50 p-2 rounded mt-1 overflow-x-auto">
-                          {step.action}
-                        </div>
-                      )}
-                      {step.observation && (
-                        <div className="text-xs text-slate-600 dark:text-slate-300 mt-1">
-                          <span className="font-semibold text-emerald-600 dark:text-emerald-400">📊 观察:</span> {JSON.stringify(JSON.parse(step.observation), null, 2)}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                <StreamingSteps
+                  steps={streamSteps}
+                  isStreaming={true}
+                  showHeader={false}
+                  className="animate-fade-in"
+                />
               )}
 
               {/* Error Message */}

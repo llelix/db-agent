@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@radix-ui/themes';
 
 interface QueryResultData {
   result: string;
@@ -211,10 +210,8 @@ export function QueryResult({ result, loading = false }: QueryResultProps) {
 
       {/* Actions */}
       <div className="flex flex-wrap gap-2">
-        <Button
-          variant="outline"
-          size="2"
-          className="gap-2"
+        <button
+          className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={() => {
             if (result.sql) {
               navigator.clipboard.writeText(result.sql);
@@ -227,12 +224,10 @@ export function QueryResult({ result, loading = false }: QueryResultProps) {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
           </svg>
           复制 SQL
-        </Button>
+        </button>
         {hasData && (
-          <Button
-            variant="outline"
-            size="2"
-            className="gap-2"
+          <button
+            className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors"
             onClick={() => {
               const csv = convertToCSV(result.data!);
               navigator.clipboard.writeText(csv);
@@ -243,7 +238,7 @@ export function QueryResult({ result, loading = false }: QueryResultProps) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5 3a7 7 0 11-14 0 7 7 0 0114 0zM19 21l-6-6m2 5a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             复制 CSV
-          </Button>
+          </button>
         )}
       </div>
     </div>
@@ -259,7 +254,7 @@ function convertToCSV(data: any[]): string {
     headers.map(header => {
       const value = row[header];
       const str = typeof value === 'object' ? JSON.stringify(value) : String(value);
-      return `\"${str.replace(/\"/g, '\"\"')}\"`;
+      return `"${str.replace(/"/g, '""')}"`;
     }).join(',')
   );
 

@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useDbContext } from '@/lib/db-context';
-import { Loader2, Table as TableIcon, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Flex, Text, Callout, Box, Button, Badge, Table, ScrollArea, SegmentedControl } from '@radix-ui/themes';
-import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
+import { Loader2, Table as TableIcon, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
 
 interface TableInfo {
   name: string;
@@ -153,253 +151,273 @@ export function TableBrowser() {
 
   if (loading && !tables.length) {
     return (
-      <Flex align="center" justify="center" py="8">
+      <div className="flex items-center justify-center py-8">
         <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
-        <Text ml="2" className="text-gray-500">加载中...</Text>
-      </Flex>
+        <span className="ml-2 text-gray-500">加载中...</span>
+      </div>
     );
   }
 
   return (
-    <Flex direction="column" gap="4">
+    <div className="space-y-4">
       {/* Error Alert */}
       {error && (
-        <Callout.Root color="red" variant="soft">
-          <Callout.Icon>
-            <ExclamationTriangleIcon />
-          </Callout.Icon>
-          <Callout.Text>{error}</Callout.Text>
-        </Callout.Root>
+        <div className="animate-fade-in rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 mt-0.5">
+              <AlertCircle className="h-5 w-5 text-red-500" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-red-800 dark:text-red-300">错误</p>
+              <p className="text-sm text-red-700 dark:text-red-400 mt-1">{error}</p>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* No Connection */}
       {!selectedConnectionId && (
-        <Flex direction="column" align="center" justify="center" py="8" className="border rounded-lg bg-card">
-          <Text className="text-gray-500">请在导航栏的数据库切换器中选择一个数据库连接</Text>
-        </Flex>
+        <div className="flex flex-col items-center justify-center py-12 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/50">
+          <p className="text-slate-600 dark:text-slate-400">请在导航栏的数据库切换器中选择一个数据库连接</p>
+        </div>
       )}
 
       {/* Main Content */}
       {selectedConnectionId && selectedConnection && (
         <>
           {/* Table List Card */}
-          <Flex direction="column" className="border rounded-lg bg-card">
-            <Flex direction="column" gap="1.5" p="6">
-              <Text size="5" weight="bold">数据表列表</Text>
-              <Text size="2" className="text-muted-foreground">选择要浏览的表，查看结构或数据</Text>
-            </Flex>
-            <Box px="6" pb="6">
+          <div className="glass rounded-xl border border-white/20 dark:border-slate-700/50 overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">数据表列表</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">选择要浏览的表，查看结构或数据</p>
+            </div>
+
+            <div className="px-6 py-6">
               {tables.length === 0 ? (
-                <Flex justify="center" py="8" className="text-gray-500">
-                  <Text>该数据库暂无表</Text>
-                </Flex>
+                <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                  <p>该数据库暂无表</p>
+                </div>
               ) : (
-                <Flex gap="3" wrap="wrap">
+                <div className="flex flex-wrap gap-3">
                   {tables.map((table) => (
-                    <Button
+                    <button
                       key={table}
-                      variant={selectedTable === table ? 'solid' : 'outline'}
                       onClick={() => setSelectedTable(table)}
-                      style={{ cursor: 'pointer' }}
+                      className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg border transition-colors ${
+                        selectedTable === table
+                          ? 'bg-violet-600 text-white border-violet-600 shadow-lg shadow-violet-500/30'
+                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
+                      }`}
                     >
-                      <TableIcon style={{ width: 16, height: 16, marginRight: 8 }} />
+                      <TableIcon className="h-4 w-4" />
                       {table}
-                    </Button>
+                    </button>
                   ))}
-                </Flex>
+                </div>
               )}
-            </Box>
-          </Flex>
+            </div>
+          </div>
 
           {/* Table Details */}
           {selectedTable && (
-            <Flex direction="column" className="border rounded-lg bg-card">
-              <Flex direction="column" gap="1.5" p="6">
-                <Flex justify="between" align="center">
-                  <Flex align="center">
-                    <TableIcon style={{ width: 20, height: 20, marginRight: 8 }} />
-                    <Text size="5" weight="bold">{selectedTable}</Text>
-                  </Flex>
-                  <Badge variant="soft">
+            <div className="glass rounded-xl border border-white/20 dark:border-slate-700/50 overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <TableIcon className="h-5 w-5 text-violet-600" />
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{selectedTable}</h3>
+                  </div>
+                  <span className="px-2 py-1 text-xs rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium">
                     {tableInfo?.rowCount ?? 0} 行
-                  </Badge>
-                </Flex>
-              </Flex>
-              <Box px="6" pb="6">
+                  </span>
+                </div>
+              </div>
+
+              <div className="px-6 py-6 space-y-4">
                 {/* Tabs */}
-                <Flex direction="column" gap="4">
-                  <Box>
-                    <SegmentedControl.Root
-                      value={activeTab}
-                      onValueChange={(value) => setActiveTab(value as any)}
-                      style={{ width: '100%' }}
+                <div className="flex gap-2">
+                  {[
+                    { id: 'list', label: '列表' },
+                    { id: 'structure', label: '结构' },
+                    { id: 'data', label: '数据' },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id as any)}
+                      className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
+                        activeTab === tab.id
+                          ? 'bg-violet-600 text-white border-violet-600'
+                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
+                      }`}
                     >
-                      <SegmentedControl.Item value="list">列表</SegmentedControl.Item>
-                      <SegmentedControl.Item value="structure">结构</SegmentedControl.Item>
-                      <SegmentedControl.Item value="data">数据</SegmentedControl.Item>
-                    </SegmentedControl.Root>
-                  </Box>
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
 
-                  {/* Tab Content */}
-                  <Box mt="2">
-                    {activeTab === 'list' && (
-                      <Flex direction="column" gap="2" className="text-sm text-gray-600">
-                        <Text>点击上方标签页查看：</Text>
-                        <ul style={{ paddingLeft: 20 }}>
-                          <li><strong>结构</strong>：查看表的列定义、数据类型、约束等</li>
-                          <li><strong>数据</strong>：浏览表中的实际数据（最多50行/页）</li>
-                        </ul>
-                      </Flex>
-                    )}
+                {/* Tab Content */}
+                <div>
+                  {activeTab === 'list' && (
+                    <div className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+                      <p>点击上方标签页查看：</p>
+                      <ul className="list-disc list-inside space-y-1 ml-2">
+                        <li><strong>结构</strong>：查看表的列定义、数据类型、约束等</li>
+                        <li><strong>数据</strong>：浏览表中的实际数据（最多50行/页）</li>
+                      </ul>
+                    </div>
+                  )}
 
-                    {activeTab === 'structure' && (
-                      <>
-                        {loading ? (
-                          <Flex align="center" justify="center" py="8">
-                            <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
-                            <Text ml="2" className="text-gray-500">加载结构中...</Text>
-                          </Flex>
-                        ) : tableInfo ? (
-                          <Flex direction="column" gap="4">
-                            <Flex justify="between" align="center">
-                              <Text size="2" className="text-gray-600">
-                                总行数: {tableInfo.rowCount}
-                              </Text>
-                              <Badge variant="outline">{tableInfo.columns.length} 列</Badge>
-                            </Flex>
+                  {activeTab === 'structure' && (
+                    <>
+                      {loading ? (
+                        <div className="flex items-center justify-center py-8">
+                          <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
+                          <span className="ml-2 text-gray-500">加载结构中...</span>
+                        </div>
+                      ) : tableInfo ? (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-slate-600 dark:text-slate-400">
+                              总行数: {tableInfo.rowCount}
+                            </span>
+                            <span className="px-2 py-1 text-xs rounded-full border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-medium">
+                              {tableInfo.columns.length} 列
+                            </span>
+                          </div>
 
-                            <ScrollArea style={{ maxHeight: 400 }}>
-                              <Table.Root>
-                                <Table.Header>
-                                  <Table.Row>
-                                    <Table.ColumnHeaderCell>列名</Table.ColumnHeaderCell>
-                                    <Table.ColumnHeaderCell>类型</Table.ColumnHeaderCell>
-                                    <Table.ColumnHeaderCell>可空</Table.ColumnHeaderCell>
-                                    <Table.ColumnHeaderCell>默认值</Table.ColumnHeaderCell>
-                                  </Table.Row>
-                                </Table.Header>
-                                <Table.Body>
-                                  {tableInfo.columns.map((col) => (
-                                    <Table.Row key={col.column_name}>
-                                      <Table.Cell><Text weight="medium">{col.column_name}</Text></Table.Cell>
-                                      <Table.Cell>
-                                        <Badge variant="outline">{col.data_type}</Badge>
-                                      </Table.Cell>
-                                      <Table.Cell>
-                                        {col.is_nullable === 'YES' ? (
-                                          <Badge color="gray">是</Badge>
-                                        ) : (
-                                          <Badge color="green">否</Badge>
-                                        )}
-                                      </Table.Cell>
-                                      <Table.Cell className="text-xs text-gray-500">
-                                        {col.column_default || '-'}
-                                      </Table.Cell>
-                                    </Table.Row>
-                                  ))}
-                                </Table.Body>
-                              </Table.Root>
-                            </ScrollArea>
-                          </Flex>
-                        ) : (
-                          <Flex justify="center" py="8" className="text-gray-500">
-                            <Text>请选择一个表查看结构</Text>
-                          </Flex>
-                        )}
-                      </>
-                    )}
+                          <div className="overflow-x-auto max-h-[400px]">
+                            <table className="w-full text-sm">
+                              <thead className="bg-slate-50 dark:bg-slate-800/50 sticky top-0">
+                                <tr>
+                                  <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">列名</th>
+                                  <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">类型</th>
+                                  <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">可空</th>
+                                  <th className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">默认值</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                                {tableInfo.columns.map((col) => (
+                                  <tr key={col.column_name} className="hover:bg-slate-50 dark:hover:bg-slate-800/30">
+                                    <td className="px-4 py-2 font-medium text-slate-900 dark:text-slate-100">{col.column_name}</td>
+                                    <td className="px-4 py-2">
+                                      <span className="px-2 py-0.5 text-xs rounded-full border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-mono">
+                                        {col.data_type}
+                                      </span>
+                                    </td>
+                                    <td className="px-4 py-2">
+                                      {col.is_nullable === 'YES' ? (
+                                        <span className="px-2 py-0.5 text-xs rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">是</span>
+                                      ) : (
+                                        <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">否</span>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-2 text-xs text-slate-500 dark:text-slate-400 font-mono">
+                                      {col.column_default || '-'}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                          <p>请选择一个表查看结构</p>
+                        </div>
+                      )}
+                    </>
+                  )}
 
-                    {activeTab === 'data' && (
-                      <>
-                        {loading ? (
-                          <Flex align="center" justify="center" py="8">
-                            <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
-                            <Text ml="2" className="text-gray-500">加载数据中...</Text>
-                          </Flex>
-                        ) : tableData ? (
-                          <Flex direction="column" gap="4">
-                            {tableData.rows.length === 0 ? (
-                              <Flex justify="center" py="8" className="text-gray-500">
-                                <Text>表中无数据</Text>
-                              </Flex>
-                            ) : (
-                              <>
-                                <ScrollArea style={{ maxHeight: 400 }}>
-                                  <Table.Root>
-                                    <Table.Header style={{ position: 'sticky', top: 0, background: 'var(--color-background)' }}>
-                                      <Table.Row>
-                                        {Object.keys(tableData.rows[0] || {}).map((key) => (
-                                          <Table.ColumnHeaderCell key={key}>{key}</Table.ColumnHeaderCell>
-                                        ))}
-                                      </Table.Row>
-                                    </Table.Header>
-                                    <Table.Body>
-                                      {tableData.rows.map((row, idx) => (
-                                        <Table.Row key={idx}>
-                                          {Object.values(row).map((val, i) => (
-                                            <Table.Cell key={i} style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={String(val)}>
-                                              {val === null ? (
-                                                <Text className="text-gray-400">NULL</Text>
-                                              ) : typeof val === 'object' ? (
-                                                <Text className="text-gray-500">[Object]</Text>
-                                              ) : (
-                                                String(val)
-                                              )}
-                                            </Table.Cell>
-                                          ))}
-                                        </Table.Row>
+                  {activeTab === 'data' && (
+                    <>
+                      {loading ? (
+                        <div className="flex items-center justify-center py-8">
+                          <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
+                          <span className="ml-2 text-gray-500">加载数据中...</span>
+                        </div>
+                      ) : tableData ? (
+                        <div className="space-y-4">
+                          {tableData.rows.length === 0 ? (
+                            <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                              <p>表中无数据</p>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="overflow-x-auto max-h-[400px]">
+                                <table className="w-full text-sm">
+                                  <thead className="bg-slate-50 dark:bg-slate-800/50 sticky top-0">
+                                    <tr>
+                                      {Object.keys(tableData.rows[0] || {}).map((key) => (
+                                        <th key={key} className="px-4 py-2 text-left font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
+                                          {key}
+                                        </th>
                                       ))}
-                                    </Table.Body>
-                                  </Table.Root>
-                                </ScrollArea>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                                    {tableData.rows.map((row, idx) => (
+                                      <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/30">
+                                        {Object.values(row).map((val, i) => (
+                                          <td key={i} className="px-4 py-2 max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap" title={String(val)}>
+                                            {val === null ? (
+                                              <span className="text-gray-400">NULL</span>
+                                            ) : typeof val === 'object' ? (
+                                              <span className="text-gray-500">[Object]</span>
+                                            ) : (
+                                              String(val)
+                                            )}
+                                          </td>
+                                        ))}
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
 
-                                <Flex justify="between" align="center">
-                                  <Text size="2" className="text-gray-600">
-                                    显示 {tableData.pagination.offset + 1} -{' '}
-                                    {Math.min(
-                                      tableData.pagination.offset + tableData.rows.length,
-                                      tableData.pagination.total
-                                    )}{' '}
-                                    条，共 {tableData.pagination.total} 条
-                                  </Text>
-                                  <Flex gap="2">
-                                    <Button
-                                      variant="outline"
-                                      size="2"
-                                      onClick={() => handlePageChange(tableData.pagination.offset - 50)}
-                                      disabled={tableData.pagination.offset === 0}
-                                    >
-                                      <ChevronLeft style={{ width: 16, height: 16, marginRight: 4 }} />
-                                      上一页
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      size="2"
-                                      onClick={() => handlePageChange(tableData.pagination.offset + 50)}
-                                      disabled={!tableData.pagination.hasMore}
-                                    >
-                                      下一页
-                                      <ChevronRight style={{ width: 16, height: 16, marginLeft: 4 }} />
-                                    </Button>
-                                  </Flex>
-                                </Flex>
-                              </>
-                            )}
-                          </Flex>
-                        ) : (
-                          <Flex justify="center" py="8" className="text-gray-500">
-                            <Text>点击"数据"标签页加载表数据</Text>
-                          </Flex>
-                        )}
-                      </>
-                    )}
-                  </Box>
-                </Flex>
-              </Box>
-            </Flex>
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-slate-600 dark:text-slate-400">
+                                  显示 {tableData.pagination.offset + 1} -{' '}
+                                  {Math.min(
+                                    tableData.pagination.offset + tableData.rows.length,
+                                    tableData.pagination.total
+                                  )}{' '}
+                                  条，共 {tableData.pagination.total} 条
+                                </span>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handlePageChange(tableData.pagination.offset - 50)}
+                                    disabled={tableData.pagination.offset === 0}
+                                    className="flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    <ChevronLeft className="h-4 w-4" />
+                                    上一页
+                                  </button>
+                                  <button
+                                    onClick={() => handlePageChange(tableData.pagination.offset + 50)}
+                                    disabled={!tableData.pagination.hasMore}
+                                    className="flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    下一页
+                                    <ChevronRight className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                          <p>点击"数据"标签页加载表数据</p>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
           )}
         </>
       )}
-    </Flex>
+    </div>
   );
 }

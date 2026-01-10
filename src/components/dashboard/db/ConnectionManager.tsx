@@ -1,10 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Loader2, Plus, Trash2, Play, Edit } from 'lucide-react';
+import { Loader2, Plus, Trash2, Play, Edit, CheckCircle, AlertCircle, Database } from 'lucide-react';
 import type { DbConnection } from '@db/schema';
-import { Flex, Text, Box, Button, Badge, Table, ScrollArea, Dialog, TextField, Checkbox, Grid, Callout } from '@radix-ui/themes';
-import { CheckCircledIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons';
 
 interface ConnectionManagerProps {
   connections: DbConnection[];
@@ -185,295 +183,385 @@ export function ConnectionManager({
 
   if (loading) {
     return (
-      <Flex align="center" justify="center" py="8">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
-        <Text ml="2" className="text-gray-500">加载中...</Text>
-      </Flex>
+      <div className="flex items-center justify-center py-8">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-violet-500 mx-auto mb-2" />
+          <p className="text-slate-600 dark:text-slate-400">加载中...</p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Flex direction="column" gap="4">
+    <div className="space-y-4">
+      {/* Error Alert */}
       {error && (
-        <Callout.Root color="red" variant="soft">
-          <Callout.Icon>
-            <ExclamationTriangleIcon />
-          </Callout.Icon>
-          <Callout.Text>{error}</Callout.Text>
-        </Callout.Root>
+        <div className="animate-fade-in rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 mt-0.5">
+              <AlertCircle className="h-5 w-5 text-red-500" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-red-800 dark:text-red-300">错误</p>
+              <p className="text-sm text-red-700 dark:text-red-400 mt-1">{error}</p>
+            </div>
+          </div>
+        </div>
       )}
 
+      {/* Success Alert */}
       {success && (
-        <Callout.Root color="green" variant="soft">
-          <Callout.Icon>
-            <CheckCircledIcon />
-          </Callout.Icon>
-          <Callout.Text>{success}</Callout.Text>
-        </Callout.Root>
+        <div className="animate-fade-in rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 mt-0.5">
+              <CheckCircle className="h-5 w-5 text-emerald-500" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">成功</p>
+              <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-1">{success}</p>
+            </div>
+          </div>
+        </div>
       )}
 
-      <Flex direction="column" className="border rounded-lg bg-card">
-        <Flex direction="column" gap="1.5" p="6">
-          <Text size="5" weight="bold">已配置的连接</Text>
-        </Flex>
-        <Box px="6" pb="6">
-          {connections.length === 0 ? (
-            <Flex justify="center" py="8" className="text-gray-500">
-              <Text>暂无数据库连接，请点击"新建连接"添加</Text>
-            </Flex>
-          ) : (
-            <ScrollArea>
-              <Table.Root>
-                <Table.Header>
-                  <Table.Row>
-                    <Table.ColumnHeaderCell>名称</Table.ColumnHeaderCell>
-                    <Table.ColumnHeaderCell>主机</Table.ColumnHeaderCell>
-                    <Table.ColumnHeaderCell>数据库</Table.ColumnHeaderCell>
-                    <Table.ColumnHeaderCell>状态</Table.ColumnHeaderCell>
-                    <Table.ColumnHeaderCell>操作</Table.ColumnHeaderCell>
-                  </Table.Row>
-                </Table.Header>
-                <Table.Body>
-                  {connections.map((conn) => (
-                    <Table.Row
-                      key={conn.id}
-                      style={{
-                        cursor: 'pointer',
-                        backgroundColor: selectedConnection === conn.id ? 'var(--blue-2)' : undefined
-                      }}
-                      onClick={() => onSelectConnection(conn.id)}
-                    >
-                      <Table.Cell>
-                        <Flex align="center" gap="2">
-                          <Text weight="medium">{conn.name}</Text>
-                          {selectedConnection === conn.id && (
-                            <Badge color="blue" variant="soft">当前</Badge>
+      {/* Connection List Card */}
+      <div className="glass rounded-xl border border-white/20 dark:border-slate-700/50 overflow-hidden">
+        {/* Header */}
+        <div className="border-b border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg px-6 py-4">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">已配置的连接</h2>
+        </div>
+
+        {/* Empty State */}
+        {connections.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-slate-500 dark:text-slate-400">
+            <Database className="h-12 w-12 mb-3 opacity-50" />
+            <p>暂无数据库连接</p>
+            <p className="text-sm mt-1">点击下方"新建连接"按钮添加</p>
+          </div>
+        ) : (
+          /* Connection Table */
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
+                <tr>
+                  <th className="px-6 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">名称</th>
+                  <th className="px-6 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">主机</th>
+                  <th className="px-6 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">数据库</th>
+                  <th className="px-6 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">状态</th>
+                  <th className="px-6 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">操作</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                {connections.map((conn) => (
+                  <tr
+                    key={conn.id}
+                    className={`
+                      cursor-pointer transition-colors duration-150
+                      ${selectedConnection === conn.id
+                        ? 'bg-violet-50 dark:bg-violet-900/20 hover:bg-violet-100 dark:hover:bg-violet-900/30'
+                        : 'bg-white dark:bg-slate-900/50 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                      }
+                    `}
+                    onClick={() => onSelectConnection(conn.id)}
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-slate-900 dark:text-slate-100">{conn.name}</span>
+                        {selectedConnection === conn.id && (
+                          <span className="px-2 py-0.5 text-xs rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 font-medium">
+                            当前
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400 font-mono text-xs">
+                      {conn.host}:{conn.port}
+                    </td>
+                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400">
+                      {conn.database}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`
+                        px-2 py-1 text-xs rounded-full font-medium
+                        ${conn.ssl
+                          ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                        }
+                      `}>
+                        {conn.ssl ? 'SSL' : '普通'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleTest(conn)}
+                          disabled={testing === conn.id}
+                          className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="测试连接"
+                        >
+                          {testing === conn.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin text-violet-500" />
+                          ) : (
+                            <Play className="h-4 w-4 text-slate-600 dark:text-slate-300" />
                           )}
-                        </Flex>
-                      </Table.Cell>
-                      <Table.Cell>{conn.host}:{conn.port}</Table.Cell>
-                      <Table.Cell>{conn.database}</Table.Cell>
-                      <Table.Cell>
-                        <Badge color={conn.ssl ? 'green' : 'gray'} variant="soft">
-                          {conn.ssl ? 'SSL' : '普通'}
-                        </Badge>
-                      </Table.Cell>
-                      <Table.Cell onClick={(e) => e.stopPropagation()}>
-                        <Flex gap="2">
-                          <Button
-                            size="2"
-                            variant="outline"
-                            onClick={() => handleTest(conn)}
-                            disabled={testing === conn.id}
-                          >
-                            {testing === conn.id ? (
-                              <Loader2 style={{ width: 16, height: 16 }} className="animate-spin" />
-                            ) : (
-                              <Play style={{ width: 16, height: 16 }} />
-                            )}
-                          </Button>
+                        </button>
 
-                          <Button
-                            size="2"
-                            variant="outline"
-                            onClick={() => openEditDialog(conn)}
-                          >
-                            <Edit style={{ width: 16, height: 16 }} />
-                          </Button>
+                        <button
+                          onClick={() => openEditDialog(conn)}
+                          className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                          title="编辑"
+                        >
+                          <Edit className="h-4 w-4 text-slate-600 dark:text-slate-300" />
+                        </button>
 
-                          <Button
-                            size="2"
-                            color="red"
-                            onClick={() => handleDelete(conn)}
-                            disabled={deleting === conn.id}
-                          >
-                            {deleting === conn.id ? (
-                              <Loader2 style={{ width: 16, height: 16 }} className="animate-spin" />
-                            ) : (
-                              <Trash2 style={{ width: 16, height: 16 }} />
-                            )}
-                          </Button>
-                        </Flex>
-                      </Table.Cell>
-                    </Table.Row>
-                  ))}
-                </Table.Body>
-              </Table.Root>
-            </ScrollArea>
-          )}
-        </Box>
-        <Box px="6" pb="6">
-          <Dialog.Root open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-            <Dialog.Trigger>
-              <Button onClick={resetForm}>
-                <Plus style={{ width: 16, height: 16, marginRight: 4 }} />
-                新建连接
-              </Button>
-            </Dialog.Trigger>
-            <Dialog.Content style={{ maxWidth: 500 }}>
-              <Dialog.Title>新建数据库连接</Dialog.Title>
-              <Dialog.Description>
+                        <button
+                          onClick={() => handleDelete(conn)}
+                          disabled={deleting === conn.id}
+                          className="p-2 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="删除"
+                        >
+                          {deleting === conn.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin text-red-500" />
+                          ) : (
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          )}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
+          <button
+            onClick={() => { resetForm(); setShowCreateDialog(true); }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-medium transition-colors shadow-lg shadow-violet-500/30"
+          >
+            <Plus className="h-4 w-4" />
+            新建连接
+          </button>
+        </div>
+      </div>
+
+      {/* Create Dialog */}
+      {showCreateDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in p-4">
+          <div className="glass rounded-2xl shadow-2xl max-w-lg w-full border border-white/20 dark:border-slate-700/50 overflow-hidden">
+            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">新建数据库连接</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
                 配置PostgreSQL数据库连接信息，连接将自动测试
-              </Dialog.Description>
+              </p>
+            </div>
 
-              <Grid columns="2" gap="4" mt="4">
-                <Flex direction="column" gap="2">
-                  <Text size="2" weight="bold">连接名称</Text>
-                  <TextField.Root
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">连接名称</label>
+                  <input
+                    type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="生产数据库"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus:border-violet-500 focus:ring-4 focus:ring-violet-200 dark:focus:ring-violet-900/30 transition-all"
                   />
-                </Flex>
-                <Flex direction="column" gap="2">
-                  <Text size="2" weight="bold">端口</Text>
-                  <TextField.Root
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">端口</label>
+                  <input
                     type="number"
                     value={formData.port}
                     onChange={(e) => setFormData({ ...formData, port: parseInt(e.target.value) || 5432 })}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus:border-violet-500 focus:ring-4 focus:ring-violet-200 dark:focus:ring-violet-900/30 transition-all"
                   />
-                </Flex>
-              </Grid>
+                </div>
+              </div>
 
-              <Flex direction="column" gap="2" mt="4">
-                <Text size="2" weight="bold">主机地址</Text>
-                <TextField.Root
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">主机地址</label>
+                <input
+                  type="text"
                   value={formData.host}
                   onChange={(e) => setFormData({ ...formData, host: e.target.value })}
                   placeholder="localhost"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus:border-violet-500 focus:ring-4 focus:ring-violet-200 dark:focus:ring-violet-900/30 transition-all"
                 />
-              </Flex>
+              </div>
 
-              <Flex direction="column" gap="2" mt="4">
-                <Text size="2" weight="bold">数据库名</Text>
-                <TextField.Root
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">数据库名</label>
+                <input
+                  type="text"
                   value={formData.database}
                   onChange={(e) => setFormData({ ...formData, database: e.target.value })}
                   placeholder="mydb"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus:border-violet-500 focus:ring-4 focus:ring-violet-200 dark:focus:ring-violet-900/30 transition-all"
                 />
-              </Flex>
+              </div>
 
-              <Grid columns="2" gap="4" mt="4">
-                <Flex direction="column" gap="2">
-                  <Text size="2" weight="bold">用户名</Text>
-                  <TextField.Root
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">用户名</label>
+                  <input
+                    type="text"
                     value={formData.username}
                     onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                     placeholder="postgres"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus:border-violet-500 focus:ring-4 focus:ring-violet-200 dark:focus:ring-violet-900/30 transition-all"
                   />
-                </Flex>
-                <Flex direction="column" gap="2">
-                  <Text size="2" weight="bold">密码</Text>
-                  <TextField.Root
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">密码</label>
+                  <input
                     type="password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     placeholder="••••••••"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus:border-violet-500 focus:ring-4 focus:ring-violet-200 dark:focus:ring-violet-900/30 transition-all"
                   />
-                </Flex>
-              </Grid>
+                </div>
+              </div>
 
-              <Flex align="center" gap="2" mt="4" className="border rounded-lg p-3">
-                <Checkbox
+              <div className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50">
+                <input
+                  type="checkbox"
+                  id="ssl-checkbox"
                   checked={formData.ssl}
-                  onCheckedChange={(checked) => setFormData({ ...formData, ssl: !!checked })}
+                  onChange={(e) => setFormData({ ...formData, ssl: e.target.checked })}
+                  className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-violet-600 focus:ring-violet-500"
                 />
-                <Text size="2" weight="bold">使用SSL连接</Text>
-              </Flex>
+                <label htmlFor="ssl-checkbox" className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                  使用SSL连接
+                </label>
+              </div>
+            </div>
 
-              <Flex justify="end" gap="2" mt="4">
-                <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
-                  取消
-                </Button>
-                <Button onClick={handleCreate}>创建连接</Button>
-              </Flex>
-            </Dialog.Content>
-          </Dialog.Root>
-        </Box>
-      </Flex>
+            <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 flex justify-end gap-2">
+              <button
+                onClick={() => setShowCreateDialog(false)}
+                className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleCreate}
+                className="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-medium transition-colors shadow-lg shadow-violet-500/30"
+              >
+                创建连接
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-      <Dialog.Root open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <Dialog.Content style={{ maxWidth: 500 }}>
-          <Dialog.Title>编辑数据库连接</Dialog.Title>
-          <Dialog.Description>
-            更新连接配置信息
-          </Dialog.Description>
+      {/* Edit Dialog */}
+      {showEditDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in p-4">
+          <div className="glass rounded-2xl shadow-2xl max-w-lg w-full border border-white/20 dark:border-slate-700/50 overflow-hidden">
+            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">编辑数据库连接</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">更新连接配置信息</p>
+            </div>
 
-          <Grid columns="2" gap="4" mt="4">
-            <Flex direction="column" gap="2">
-              <Text size="2" weight="bold">连接名称</Text>
-              <TextField.Root
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-            </Flex>
-            <Flex direction="column" gap="2">
-              <Text size="2" weight="bold">端口</Text>
-              <TextField.Root
-                type="number"
-                value={formData.port}
-                onChange={(e) => setFormData({ ...formData, port: parseInt(e.target.value) || 5432 })}
-              />
-            </Flex>
-          </Grid>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">连接名称</label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus:border-violet-500 focus:ring-4 focus:ring-violet-200 dark:focus:ring-violet-900/30 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">端口</label>
+                  <input
+                    type="number"
+                    value={formData.port}
+                    onChange={(e) => setFormData({ ...formData, port: parseInt(e.target.value) || 5432 })}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus:border-violet-500 focus:ring-4 focus:ring-violet-200 dark:focus:ring-violet-900/30 transition-all"
+                  />
+                </div>
+              </div>
 
-          <Flex direction="column" gap="2" mt="4">
-            <Text size="2" weight="bold">主机地址</Text>
-            <TextField.Root
-              value={formData.host}
-              onChange={(e) => setFormData({ ...formData, host: e.target.value })}
-            />
-          </Flex>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">主机地址</label>
+                <input
+                  type="text"
+                  value={formData.host}
+                  onChange={(e) => setFormData({ ...formData, host: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus:border-violet-500 focus:ring-4 focus:ring-violet-200 dark:focus:ring-violet-900/30 transition-all"
+                />
+              </div>
 
-          <Flex direction="column" gap="2" mt="4">
-            <Text size="2" weight="bold">数据库名</Text>
-            <TextField.Root
-              value={formData.database}
-              onChange={(e) => setFormData({ ...formData, database: e.target.value })}
-            />
-          </Flex>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">数据库名</label>
+                <input
+                  type="text"
+                  value={formData.database}
+                  onChange={(e) => setFormData({ ...formData, database: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus:border-violet-500 focus:ring-4 focus:ring-violet-200 dark:focus:ring-violet-900/30 transition-all"
+                />
+              </div>
 
-          <Grid columns="2" gap="4" mt="4">
-            <Flex direction="column" gap="2">
-              <Text size="2" weight="bold">用户名</Text>
-              <TextField.Root
-                value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              />
-            </Flex>
-            <Flex direction="column" gap="2">
-              <Text size="2" weight="bold">新密码 (留空不修改)</Text>
-              <TextField.Root
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                placeholder="••••••••"
-              />
-            </Flex>
-          </Grid>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">用户名</label>
+                  <input
+                    type="text"
+                    value={formData.username}
+                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus:border-violet-500 focus:ring-4 focus:ring-violet-200 dark:focus:ring-violet-900/30 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">新密码 (留空不修改)</label>
+                  <input
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    placeholder="••••••••"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus:border-violet-500 focus:ring-4 focus:ring-violet-200 dark:focus:ring-violet-900/30 transition-all"
+                  />
+                </div>
+              </div>
 
-          <Flex align="center" gap="2" mt="4" className="border rounded-lg p-3">
-            <Checkbox
-              checked={formData.ssl}
-              onCheckedChange={(checked) => setFormData({ ...formData, ssl: !!checked })}
-            />
-            <Text size="2" weight="bold">使用SSL连接</Text>
-          </Flex>
+              <div className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50">
+                <input
+                  type="checkbox"
+                  id="ssl-checkbox-edit"
+                  checked={formData.ssl}
+                  onChange={(e) => setFormData({ ...formData, ssl: e.target.checked })}
+                  className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-violet-600 focus:ring-violet-500"
+                />
+                <label htmlFor="ssl-checkbox-edit" className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                  使用SSL连接
+                </label>
+              </div>
+            </div>
 
-          <Flex justify="end" gap="2" mt="4">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowEditDialog(false);
-                setEditingConnection(null);
-              }}
-            >
-              取消
-            </Button>
-            <Button onClick={handleUpdate}>更新连接</Button>
-          </Flex>
-        </Dialog.Content>
-      </Dialog.Root>
-    </Flex>
+            <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 flex justify-end gap-2">
+              <button
+                onClick={() => { setShowEditDialog(false); setEditingConnection(null); }}
+                className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleUpdate}
+                className="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-medium transition-colors shadow-lg shadow-violet-500/30"
+              >
+                更新连接
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
