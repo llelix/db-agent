@@ -83,6 +83,8 @@ export const dbConnections = pgTable('db_connections', {
   username: varchar('username', { length: 100 }).notNull(),
   password: varchar('password', { length: 255 }).notNull(),
   ssl: boolean('ssl').default(false),
+  type: varchar('type', { length: 20 }).$type<'postgresql' | 'mysql'>().notNull().default('postgresql'),
+  schema: varchar('schema', { length: 100 }).default('public'),  // PostgreSQL schema 名称
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });

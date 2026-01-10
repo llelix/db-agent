@@ -5,6 +5,7 @@ import { dbConnections, type NewDbConnection } from '@db/schema';
 import { eq } from 'drizzle-orm';
 import { encryptPassword } from '@/lib/database/connection-manager';
 import { ConnectionManager } from '@/lib/database/connection-manager';
+import { DatabaseClientFactory, type DatabaseType } from '@/lib/types/database';
 
 /**
  * GET /api/db/connections
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, host, port, database, username, password, ssl } = body;
+    const { name, host, port, database, username, password, ssl, type, schema } = body;
 
     // 验证必填字段
     if (!name || !host || !database || !username || !password) {
@@ -72,15 +73,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 验证数据库类型
+    const dbType: DatabaseType = type === 'mysql' ? 'mysql' : 'postgresql';
+
+    // 自动设置默认端口
+    const finalPort = port || DatabaseClientFactory.getDefaultPort(dbType);
+
+    // PostgreSQL schema，默认为 'public'
+    const finalSchema = dbType === 'postgresql' ? (schema || 'public') : undefined;
+
     // 测试连接
     const testConfig = {
       name,
       host,
-      port: port || 5432,
+      port: finalPort,
       database,
       username,
       password,
       ssl: ssl || false,
+      type: dbType,
+      schema: finalSchema,
       userId: session.user.id,
     };
 
@@ -100,11 +112,13 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       name,
       host,
-      port: port || 5432,
+      port: finalPort,
       database,
       username,
       password: encryptedPassword,
       ssl: ssl || false,
+      type: dbType,
+      schema: finalSchema,
     };
 
     const [connection] = await db.insert(dbConnections).values(newConnection).returning();

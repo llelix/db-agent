@@ -1,19 +1,22 @@
 import 'dotenv/config';
-import { drizzle } from 'drizzle-orm/postgres-js';
+import { drizzle as pgDrizzle } from 'drizzle-orm/postgres-js';
+import { drizzle as mysqlDrizzle } from 'drizzle-orm/mysql2';
 import postgres from 'postgres';
-import { sql, eq } from 'drizzle-orm';
+import mysql from 'mysql2/promise';
+import { eq } from 'drizzle-orm';
 import { db } from './client';
-import { dbConnections, connectionHistory, type DbConnection } from '@/db/schema';
+import { dbConnections, type DbConnection } from '@/db/schema';
 import * as aesjs from 'aes-js';
+import { DatabaseType, DatabaseConfig } from '@/lib/types/database';
+
+// 连接池缓存 - 支持多种数据库类型
+const connectionPools = new Map<string, any>();
 
 // 加密密钥 (从环境变量获取，否则使用默认密钥)
 const ENCRYPTION_KEY = process.env.DB_ENCRYPTION_KEY || 'default-encryption-key-for-dev-only';
 const keyBytes = aesjs.utils.hex.toBytes(
   Buffer.from(ENCRYPTION_KEY).toString('hex').padEnd(32 * 2, '0').slice(0, 32 * 2)
 );
-
-// 连接池缓存
-const connectionPools = new Map<string, postgres.Sql>();
 
 /**
  * 加密密码
@@ -42,46 +45,91 @@ function decryptPassword(encrypted: string): string {
 
 /**
  * 数据库连接管理器
+ * 支持 PostgreSQL 和 MySQL（用户连接的外部数据库）
  */
 export class ConnectionManager {
   /**
-   * 获取连接字符串
+   * 从 DbConnection 获取数据库类型
    */
-  private static getConnectionString(config: DbConnection): string {
-    const { host, port, database, username, password, ssl } = config;
-    const protocol = ssl ? 'postgres' : 'postgres';
-    return `${protocol}://${username}:${password}@${host}:${port}/${database}${ssl ? '?sslmode=require' : ''}`;
+  private static getDatabaseType(config: DbConnection): DatabaseType {
+    if (config.type) return config.type as DatabaseType;
+    if (config.port === 3306) return 'mysql';
+    return 'postgresql';
+  }
+
+  /**
+   * 获取数据库配置
+   */
+  private static getDatabaseConfig(config: DbConnection): DatabaseConfig {
+    const type = this.getDatabaseType(config);
+    const decryptedPassword = decryptPassword(config.password);
+
+    return {
+      type,
+      host: config.host,
+      port: config.port || 5432,
+      database: config.database,
+      username: config.username,
+      password: decryptedPassword,
+      ssl: config.ssl || false,
+      schema: config.schema || 'public',  // PostgreSQL schema，默认为 'public'
+    };
   }
 
   /**
    * 获取或创建连接池
+   * 支持动态数据库类型
    */
-  static getPool(connectionConfig: DbConnection): postgres.Sql {
+  static async getPool(connectionConfig: DbConnection): Promise<any> {
     const connectionId = connectionConfig.id;
 
     if (connectionPools.has(connectionId)) {
-      return connectionPools.get(connectionId)!;
+      return connectionPools.get(connectionId);
     }
 
-    // 解密密码
-    const decryptedPassword = decryptPassword(connectionConfig.password);
+    const config = this.getDatabaseConfig(connectionConfig);
+    const client = await this.createClient(config);
 
-    // 创建连接字符串
-    const connectionString = this.getConnectionString({
-      ...connectionConfig,
-      password: decryptedPassword
-    });
+    connectionPools.set(connectionId, client);
+    return client;
+  }
 
-    // 创建新的连接池
-    const pool = postgres(connectionString, {
-      max: 5,
-      idle_timeout: 20,
-      max_lifetime: 60 * 30,
-      connect_timeout: 10,
-    });
+  /**
+   * 创建数据库客户端（内部工厂方法）
+   */
+  private static async createClient(config: DatabaseConfig) {
+    const { type, host, port, database, username, password, ssl } = config;
 
-    connectionPools.set(connectionId, pool);
-    return pool;
+    switch (type) {
+      case 'postgresql': {
+        const connectionString = `postgres://${username}:${password}@${host}:${port}/${database}${ssl ? '?sslmode=require' : ''}`;
+        const client = postgres(connectionString, {
+          max: 10,
+          idle_timeout: 20,
+          max_lifetime: 60 * 30,
+          connect_timeout: 10,
+        });
+        return pgDrizzle(client);
+      }
+
+      case 'mysql': {
+        const connection = mysql.createPool({
+          host,
+          port,
+          user: username,
+          password,
+          database,
+          ssl: ssl ? { rejectUnauthorized: false } : undefined,
+          waitForConnections: true,
+          connectionLimit: 10,
+          queueLimit: 0,
+        });
+        return mysqlDrizzle(connection);
+      }
+
+      default:
+        throw new Error(`不支持的数据库类型: ${type}`);
+    }
   }
 
   /**
@@ -100,22 +148,51 @@ export class ConnectionManager {
   }
 
   /**
-   * 测试连接
+   * 测试连接 - 支持多数据库类型
    */
   static async testConnection(config: Omit<DbConnection, 'id' | 'createdAt' | 'updatedAt'>): Promise<boolean> {
     try {
-      const encryptedPassword = encryptPassword(config.password);
-      const connectionString = this.getConnectionString({
-        ...config,
-        id: 'test',
+      const dbConfig: DatabaseConfig = {
+        type: (config as any).type as DatabaseType || 'postgresql',
+        host: config.host,
+        port: config.port || 5432,
+        database: config.database,
+        username: config.username,
         password: config.password,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      } as DbConnection);
+        ssl: config.ssl || false,
+        schema: (config as any).schema || 'public',
+      };
 
-      const testClient = postgres(connectionString, { max: 1 });
-      await testClient`SELECT 1`;
-      await testClient.end();
+      if (dbConfig.type === 'mysql') {
+        // MySQL 直接使用 mysql2 连接测试
+        const mysql = await import('mysql2/promise');
+        const connection = mysql.createPool({
+          host: dbConfig.host,
+          port: dbConfig.port,
+          user: dbConfig.username,
+          password: dbConfig.password,
+          database: dbConfig.database,
+          ssl: dbConfig.ssl ? { rejectUnauthorized: false } : undefined,
+          connectionLimit: 1,
+        });
+
+        await connection.execute('SELECT 1');
+        await connection.end();
+      } else {
+        // PostgreSQL 使用 postgres 连接测试
+        const postgresModule = await import('postgres');
+        const postgres = postgresModule.default || postgresModule;
+        const sql = postgres(`postgres://${dbConfig.username}:${dbConfig.password}@${dbConfig.host}:${dbConfig.port}/${dbConfig.database}${dbConfig.ssl ? '?sslmode=require' : ''}`);
+
+        // 如果指定了自定义 schema，先切换到该 schema
+        if (dbConfig.schema && dbConfig.schema !== 'public') {
+          await sql`SET search_path TO ${sql(dbConfig.schema)}`;
+        }
+
+        await sql`SELECT 1`;
+        await sql.end();
+      }
+
       return true;
     } catch (error) {
       console.error('连接测试失败:', error);
@@ -127,54 +204,79 @@ export class ConnectionManager {
    * 执行查询
    */
   static async executeQuery(connectionId: string, sqlQuery: string): Promise<any[]> {
-    const connection = await db.query.dbConnections.findFirst({
-      where: eq(dbConnections.id, connectionId),
-    });
+    const connection = await this.getConnection(connectionId);
+    if (!connection) throw new Error('连接不存在');
 
-    if (!connection) {
-      throw new Error('连接不存在');
-    }
-
-    const pool = this.getPool(connection);
-    const result = await pool.unsafe(sqlQuery);
-    return result;
+    const pool = await this.getPool(connection);
+    return await pool.execute(sqlQuery);
   }
 
   /**
-   * 获取表列表
+   * 获取表列表 - 支持多数据库
    */
   static async getTables(connectionId: string): Promise<string[]> {
-    const result = await this.executeQuery(connectionId, `
-      SELECT table_name
-      FROM information_schema.tables
-      WHERE table_schema = 'public'
-      AND table_type = 'BASE TABLE'
-      ORDER BY table_name
-    `);
+    const connection = await this.getConnection(connectionId);
+    if (!connection) throw new Error('连接不存在');
+
+    const type = this.getDatabaseType(connection);
+    const pool = await this.getPool(connection);
+    const schema = connection.schema || 'public';
+
+    let query: string;
+    switch (type) {
+      case 'postgresql':
+        query = `SELECT table_name FROM information_schema.tables WHERE table_schema = '${schema}' AND table_type = 'BASE TABLE' ORDER BY table_name`;
+        break;
+      case 'mysql':
+        query = `SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE' ORDER BY table_name`;
+        break;
+      default:
+        throw new Error(`不支持的数据库类型: ${type}`);
+    }
+
+    const result = await pool.execute(query);
     return result.map((row: any) => row.table_name);
   }
 
   /**
-   * 获取表结构
+   * 获取表结构 - 支持多数据库
    */
   static async getTableSchema(connectionId: string, tableName: string): Promise<any[]> {
-    const result = await this.executeQuery(connectionId, `
-      SELECT
-        column_name,
-        data_type,
-        is_nullable,
-        column_default,
-        ordinal_position
-      FROM information_schema.columns
-      WHERE table_schema = 'public'
-      AND table_name = '${tableName}'
-      ORDER BY ordinal_position
-    `);
-    return result;
+    const connection = await this.getConnection(connectionId);
+    if (!connection) throw new Error('连接不存在');
+
+    const type = this.getDatabaseType(connection);
+    const pool = await this.getPool(connection);
+    const schema = connection.schema || 'public';
+
+    let query: string;
+    switch (type) {
+      case 'postgresql':
+        query = `
+          SELECT column_name, data_type, is_nullable, column_default, ordinal_position
+          FROM information_schema.columns
+          WHERE table_schema = '${schema}' AND table_name = '${tableName}'
+          ORDER BY ordinal_position
+        `;
+        break;
+      case 'mysql':
+        query = `
+          SELECT column_name, data_type, is_nullable, column_default, ordinal_position
+          FROM information_schema.columns
+          WHERE table_schema = DATABASE() AND table_name = '${tableName}'
+          ORDER BY ordinal_position
+        `;
+        break;
+      default:
+        throw new Error(`不支持的数据库类型: ${type}`);
+    }
+
+    return await pool.execute(query);
   }
 
   /**
    * 获取表数据 (分页)
+   * 注意：MySQL 不支持双引号标识符，需要根据数据库类型调整
    */
   static async getTableData(
     connectionId: string,
@@ -182,12 +284,16 @@ export class ConnectionManager {
     limit: number = 50,
     offset: number = 0
   ): Promise<any[]> {
+    const connection = await this.getConnection(connectionId);
+    if (!connection) throw new Error('连接不存在');
+
+    const type = this.getDatabaseType(connection);
     const safeTableName = tableName.replace(/[^a-zA-Z0-9_]/g, '');
-    const result = await this.executeQuery(connectionId, `
-      SELECT * FROM "${safeTableName}"
-      LIMIT ${limit} OFFSET ${offset}
-    `);
-    return result;
+
+    // 根据数据库类型使用不同的引号
+    const quotedName = type === 'mysql' ? `\`${safeTableName}\`` : `"${safeTableName}"`;
+
+    return await this.executeQuery(connectionId, `SELECT * FROM ${quotedName} LIMIT ${limit} OFFSET ${offset}`);
   }
 
   /**
@@ -199,7 +305,10 @@ export class ConnectionManager {
     action: string,
     details?: any
   ): Promise<void> {
+    // 导入 connectionHistory 表
+    const { connectionHistory } = await import('@/db/schema');
     await db.insert(connectionHistory).values({
+      id: crypto.randomUUID(),
       userId,
       connectionId,
       action,
@@ -213,7 +322,7 @@ export class ConnectionManager {
   static async closeConnection(connectionId: string): Promise<void> {
     const pool = connectionPools.get(connectionId);
     if (pool) {
-      await pool.end();
+      if (pool.end) await pool.end();
       connectionPools.delete(connectionId);
     }
   }
@@ -223,7 +332,7 @@ export class ConnectionManager {
    */
   static async closeAllConnections(): Promise<void> {
     for (const [id, pool] of connectionPools) {
-      await pool.end();
+      if (pool.end) await pool.end();
       connectionPools.delete(id);
     }
   }
@@ -234,7 +343,7 @@ export class ConnectionManager {
   static clearConnectionCache(connectionId: string): void {
     const pool = connectionPools.get(connectionId);
     if (pool) {
-      pool.end().catch(console.error);
+      if (pool.end) pool.end().catch(console.error);
       connectionPools.delete(connectionId);
       console.log(`已清除连接缓存: ${connectionId}`);
     }
@@ -255,7 +364,7 @@ export class ConnectionManager {
       const pool = connectionPools.get(connectionId);
       if (!pool) return false;
 
-      await pool`SELECT 1`;
+      await pool.execute('SELECT 1');
       return true;
     } catch (error) {
       // 如果连接无效，清除缓存

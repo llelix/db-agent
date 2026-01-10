@@ -37,6 +37,8 @@ export function ConnectionManager({
     username: '',
     password: '',
     ssl: false,
+    type: 'postgresql' as 'postgresql' | 'mysql',
+    schema: 'public',
   });
 
   const resetForm = () => {
@@ -48,6 +50,8 @@ export function ConnectionManager({
       username: '',
       password: '',
       ssl: false,
+      type: 'postgresql',
+      schema: 'public',
     });
     setError(null);
     setSuccess(null);
@@ -177,6 +181,8 @@ export function ConnectionManager({
       username: connection.username,
       password: '', // 不回显密码
       ssl: connection.ssl || false,
+      type: connection.type || 'postgresql',
+      schema: connection.schema || 'public',
     });
     setShowEditDialog(true);
   };
@@ -245,8 +251,10 @@ export function ConnectionManager({
               <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                 <tr>
                   <th className="px-6 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">名称</th>
+                  <th className="px-6 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">类型</th>
                   <th className="px-6 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">主机</th>
                   <th className="px-6 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">数据库</th>
+                  <th className="px-6 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">Schema</th>
                   <th className="px-6 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">状态</th>
                   <th className="px-6 py-3 text-left font-semibold text-slate-700 dark:text-slate-300">操作</th>
                 </tr>
@@ -274,11 +282,19 @@ export function ConnectionManager({
                         )}
                       </div>
                     </td>
+                    <td className="px-6 py-4">
+                      <span className="px-2 py-1 text-xs rounded-full font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                        {conn.type === 'mysql' ? 'MySQL' : 'PostgreSQL'}
+                      </span>
+                    </td>
                     <td className="px-6 py-4 text-slate-600 dark:text-slate-400 font-mono text-xs">
                       {conn.host}:{conn.port}
                     </td>
                     <td className="px-6 py-4 text-slate-600 dark:text-slate-400">
                       {conn.database}
+                    </td>
+                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400 font-mono text-xs">
+                      {conn.schema || 'public'}
                     </td>
                     <td className="px-6 py-4">
                       <span className={`
@@ -354,7 +370,7 @@ export function ConnectionManager({
             <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg px-6 py-4 border-b border-slate-200 dark:border-slate-700">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">新建数据库连接</h3>
               <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                配置PostgreSQL数据库连接信息，连接将自动测试
+                配置数据库连接信息，连接将自动测试
               </p>
             </div>
 
@@ -371,36 +387,72 @@ export function ConnectionManager({
                   />
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">数据库类型</label>
+                  <select
+                    value={formData.type}
+                    onChange={(e) => {
+                      const newType = e.target.value as 'postgresql' | 'mysql';
+                      setFormData({
+                        ...formData,
+                        type: newType,
+                        port: newType === 'mysql' ? 3306 : 5432,
+                        schema: newType === 'mysql' ? '' : formData.schema
+                      });
+                    }}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus:border-violet-500 focus:ring-4 focus:ring-violet-200 dark:focus:ring-violet-900/30 transition-all"
+                  >
+                    <option value="postgresql">PostgreSQL</option>
+                    <option value="mysql">MySQL</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">主机地址</label>
+                  <input
+                    type="text"
+                    value={formData.host}
+                    onChange={(e) => setFormData({ ...formData, host: e.target.value })}
+                    placeholder="localhost"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus:border-violet-500 focus:ring-4 focus:ring-violet-200 dark:focus:ring-violet-900/30 transition-all"
+                  />
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">端口</label>
                   <input
                     type="number"
                     value={formData.port}
-                    onChange={(e) => setFormData({ ...formData, port: parseInt(e.target.value) || 5432 })}
+                    onChange={(e) => setFormData({ ...formData, port: parseInt(e.target.value) || (formData.type === 'mysql' ? 3306 : 5432) })}
                     className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus:border-violet-500 focus:ring-4 focus:ring-violet-200 dark:focus:ring-violet-900/30 transition-all"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">主机地址</label>
-                <input
-                  type="text"
-                  value={formData.host}
-                  onChange={(e) => setFormData({ ...formData, host: e.target.value })}
-                  placeholder="localhost"
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus:border-violet-500 focus:ring-4 focus:ring-violet-200 dark:focus:ring-violet-900/30 transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">数据库名</label>
-                <input
-                  type="text"
-                  value={formData.database}
-                  onChange={(e) => setFormData({ ...formData, database: e.target.value })}
-                  placeholder="mydb"
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus:border-violet-500 focus:ring-4 focus:ring-violet-200 dark:focus:ring-violet-900/30 transition-all"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">数据库名</label>
+                  <input
+                    type="text"
+                    value={formData.database}
+                    onChange={(e) => setFormData({ ...formData, database: e.target.value })}
+                    placeholder="mydb"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus:border-violet-500 focus:ring-4 focus:ring-violet-200 dark:focus:ring-violet-900/30 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Schema {formData.type === 'mysql' && '(PostgreSQL only)'}
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.schema}
+                    onChange={(e) => setFormData({ ...formData, schema: e.target.value })}
+                    placeholder="public"
+                    disabled={formData.type === 'mysql'}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus:border-violet-500 focus:ring-4 focus:ring-violet-200 dark:focus:ring-violet-900/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -410,7 +462,7 @@ export function ConnectionManager({
                     type="text"
                     value={formData.username}
                     onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                    placeholder="postgres"
+                    placeholder={formData.type === 'mysql' ? 'root' : 'postgres'}
                     className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus:border-violet-500 focus:ring-4 focus:ring-violet-200 dark:focus:ring-violet-900/30 transition-all"
                   />
                 </div>
@@ -479,34 +531,70 @@ export function ConnectionManager({
                   />
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">数据库类型</label>
+                  <select
+                    value={formData.type}
+                    onChange={(e) => {
+                      const newType = e.target.value as 'postgresql' | 'mysql';
+                      setFormData({
+                        ...formData,
+                        type: newType,
+                        port: newType === 'mysql' ? 3306 : 5432,
+                        schema: newType === 'mysql' ? '' : formData.schema
+                      });
+                    }}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus:border-violet-500 focus:ring-4 focus:ring-violet-200 dark:focus:ring-violet-900/30 transition-all"
+                  >
+                    <option value="postgresql">PostgreSQL</option>
+                    <option value="mysql">MySQL</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">主机地址</label>
+                  <input
+                    type="text"
+                    value={formData.host}
+                    onChange={(e) => setFormData({ ...formData, host: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus:border-violet-500 focus:ring-4 focus:ring-violet-200 dark:focus:ring-violet-900/30 transition-all"
+                  />
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">端口</label>
                   <input
                     type="number"
                     value={formData.port}
-                    onChange={(e) => setFormData({ ...formData, port: parseInt(e.target.value) || 5432 })}
+                    onChange={(e) => setFormData({ ...formData, port: parseInt(e.target.value) || (formData.type === 'mysql' ? 3306 : 5432) })}
                     className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus:border-violet-500 focus:ring-4 focus:ring-violet-200 dark:focus:ring-violet-900/30 transition-all"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">主机地址</label>
-                <input
-                  type="text"
-                  value={formData.host}
-                  onChange={(e) => setFormData({ ...formData, host: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus:border-violet-500 focus:ring-4 focus:ring-violet-200 dark:focus:ring-violet-900/30 transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">数据库名</label>
-                <input
-                  type="text"
-                  value={formData.database}
-                  onChange={(e) => setFormData({ ...formData, database: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus:border-violet-500 focus:ring-4 focus:ring-violet-200 dark:focus:ring-violet-900/30 transition-all"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">数据库名</label>
+                  <input
+                    type="text"
+                    value={formData.database}
+                    onChange={(e) => setFormData({ ...formData, database: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus:border-violet-500 focus:ring-4 focus:ring-violet-200 dark:focus:ring-violet-900/30 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Schema {formData.type === 'mysql' && '(PostgreSQL only)'}
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.schema}
+                    onChange={(e) => setFormData({ ...formData, schema: e.target.value })}
+                    placeholder="public"
+                    disabled={formData.type === 'mysql'}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 focus:border-violet-500 focus:ring-4 focus:ring-violet-200 dark:focus:ring-violet-900/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

@@ -5,6 +5,7 @@ import { dbConnections } from '@db/schema';
 import { eq, and } from 'drizzle-orm';
 import { encryptPassword } from '@/lib/database/connection-manager';
 import { ConnectionManager } from '@/lib/database/connection-manager';
+import { DatabaseClientFactory, type DatabaseType } from '@/lib/types/database';
 
 /**
  * GET /api/db/connections/:id
@@ -91,16 +92,27 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, host, port, database, username, password, ssl } = body;
+    const { name, host, port, database, username, password, ssl, type, schema } = body;
+
+    // 验证数据库类型
+    const dbType: DatabaseType = type || existing.type || 'postgresql';
+
+    // 自动设置默认端口
+    const finalPort = port || DatabaseClientFactory.getDefaultPort(dbType);
+
+    // PostgreSQL schema
+    const finalSchema = dbType === 'postgresql' ? (schema || existing.schema || 'public') : undefined;
 
     // 准备更新数据
     const updateData: any = {
       name,
       host,
-      port: port || 5432,
+      port: finalPort,
       database,
       username,
       ssl: ssl || false,
+      type: dbType,
+      schema: finalSchema,
       updatedAt: new Date(),
     };
 
@@ -112,11 +124,13 @@ export async function PUT(
       const testConfig = {
         name: name || existing.name,
         host: host || existing.host,
-        port: port || existing.port,
+        port: finalPort,
         database: database || existing.database,
         username: username || existing.username,
         password,
         ssl: ssl || existing.ssl,
+        type: dbType,
+        schema: finalSchema,
         userId: session.user.id,
       };
 
