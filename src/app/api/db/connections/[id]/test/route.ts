@@ -52,6 +52,8 @@ export async function POST(
       password: decryptedPassword,
       ssl: connection.ssl,
       userId: session.user.id,
+      type: connection.type,
+      schema: connection.schema,
     };
 
     const isConnected = await ConnectionManager.testConnection(testConfig);

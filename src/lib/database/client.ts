@@ -18,6 +18,9 @@ const client = postgres(connectionString, {
   idle_timeout: 20,     // 空闲超时(秒)
   max_lifetime: 60 * 30, // 最大生命周期(秒)
   connect_timeout: 10,  // 连接超时(秒)
+  ssl: {                // Aiven Cloud SSL 配置
+    ca: require('fs').readFileSync('./certs/aiven-ca.pem'),
+  },
 });
 
 // 创建 Drizzle 实例

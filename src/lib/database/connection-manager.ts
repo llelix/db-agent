@@ -208,7 +208,10 @@ export class ConnectionManager {
     if (!connection) throw new Error('连接不存在');
 
     const pool = await this.getPool(connection);
-    return await pool.execute(sqlQuery);
+    // mysql2 execute 返回 [rows, fields]，需要取 rows
+    const result = await pool.execute(sqlQuery);
+    // 如果是数组格式（mysql2），取第一项
+    return Array.isArray(result) ? result[0] : result;
   }
 
   /**

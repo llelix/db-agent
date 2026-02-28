@@ -199,7 +199,7 @@ export function TableBrowser() {
                 </div>
               ) : (
                 <div className="flex flex-wrap gap-3">
-                  {tables.map((table) => (
+                  {[...new Set(tables)].filter(Boolean).map((table) => (
                     <button
                       key={table}
                       onClick={() => setSelectedTable(table)}

@@ -16,6 +16,9 @@ const nextAuthResult = NextAuth({
   // 使用 Drizzle 适配器连接数据库
   adapter: DrizzleAdapter(db),
 
+  // 信任主机（解决 CSRF 问题）
+  trustHost: true,
+
   // 会话策略：使用 JWT
   session: {
     strategy: 'jwt',
